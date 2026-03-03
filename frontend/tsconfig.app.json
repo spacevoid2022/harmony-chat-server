@@ -29,6 +29,6 @@
     "noUncheckedSideEffectImports": true
   },
   "include": [
-    "frontend/src"
+    "src"
   ]
 }
