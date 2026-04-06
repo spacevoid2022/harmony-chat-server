@@ -12,13 +12,25 @@ public class Message {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id", nullable = false)
     private Channel channel;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("senderId")
+    public String getSenderIdString() {
+        return sender != null ? sender.getUsername() : "Unknown";
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("channelId")
+    public String getChannelIdString() {
+        return channel != null ? channel.getId().toString() : null;
+    }
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;

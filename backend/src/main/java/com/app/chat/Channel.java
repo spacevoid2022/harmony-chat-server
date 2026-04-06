@@ -14,6 +14,7 @@ public class Channel {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL)
     private List<Message> messages;
 

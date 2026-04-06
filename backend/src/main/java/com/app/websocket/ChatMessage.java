@@ -1,6 +1,7 @@
 package com.app.websocket;
 
 public class ChatMessage {
+    private String id;
     private String channelId;
     private String senderId;
     private String content;
@@ -8,7 +9,8 @@ public class ChatMessage {
 
     public ChatMessage() {}
 
-    public ChatMessage(String channelId, String senderId, String content, String timestamp) {
+    public ChatMessage(String id, String channelId, String senderId, String content, String timestamp) {
+        this.id = id;
         this.channelId = channelId;
         this.senderId = senderId;
         this.content = content;
@@ -16,6 +18,8 @@ public class ChatMessage {
     }
 
     // Getters and Setters
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
     public String getChannelId() { return channelId; }
     public void setChannelId(String channelId) { this.channelId = channelId; }
     public String getSenderId() { return senderId; }

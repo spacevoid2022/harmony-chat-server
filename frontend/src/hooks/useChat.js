@@ -4,6 +4,23 @@ import { getUsername } from '../services/auth';
 
 const useChat = (channelId) => {
   const [messages, setMessages] = useState([]);
+  
+  // Initial load from cache
+  useEffect(() => {
+    if (channelId) {
+      try {
+        const saved = localStorage.getItem(`cache_messages_${channelId}`);
+        if (saved && saved !== 'undefined') {
+          setMessages(JSON.parse(saved));
+        } else {
+          setMessages([]);
+        }
+      } catch (e) {
+        setMessages([]);
+      }
+    }
+  }, [channelId]);
+
   const [isConnected, setIsConnected] = useState(false);
   const clientRef = useRef(null);
   const subscriptionRef = useRef(null);
@@ -17,9 +34,9 @@ const useChat = (channelId) => {
         const response = await fetch(`http://localhost:8088/api/channels/${channelId}/messages`);
         if (response.ok) {
           const history = await response.json();
-          setMessages(Array.isArray(history) ? history : []);
-        } else {
-          setMessages([]);
+          const validHistory = Array.isArray(history) ? history : [];
+          setMessages(validHistory);
+          localStorage.setItem(`cache_messages_${channelId}`, JSON.stringify(validHistory));
         }
       } catch (error) {
         console.error('Error fetching chat history:', error);
@@ -33,7 +50,7 @@ const useChat = (channelId) => {
     setIsConnected(true);
     console.log('Connected to WebSocket');
     
-    // Initial subscriptions that don't change with channel
+    // Initial subscriptions ...
     clientRef.current.subscribe('/topic/presence', (message) => {
       const presenceUpdate = JSON.parse(message.body);
       console.log('Presence update:', presenceUpdate);
@@ -47,7 +64,6 @@ const useChat = (channelId) => {
 
   const onDisconnect = useCallback(() => {
     setIsConnected(false);
-    console.log('Disconnected from WebSocket');
   }, []);
 
   const onError = useCallback((error) => {
@@ -70,19 +86,28 @@ const useChat = (channelId) => {
   // Handle channel specific subscription
   useEffect(() => {
     if (isConnected && clientRef.current && channelId) {
-      // Unsubscribe from previous channel if exists
       if (subscriptionRef.current) {
         subscriptionRef.current.unsubscribe();
       }
 
       console.log('Subscribing to channel:', channelId);
-      subscriptionRef.current = clientRef.current.subscribe(`/topic/channel/${channelId}`, (message) => {
-        const receivedMessage = JSON.parse(message.body);
-        setMessages((prev) => {
-          // Prevent duplicates if history fetch and websocket message collide
-          if (prev.some(m => m.id === receivedMessage.id && m.id !== null)) return prev;
-          return [...prev, receivedMessage];
-        });
+      subscriptionRef.current = clientRef.current.subscribe(`/topic/channel/${channelId}`, (msg) => {
+        try {
+          const received = JSON.parse(msg.body);
+          setMessages((prev) => {
+            // deduplicate by id or content+timestamp
+            const exists = prev.some(m => (m.id && received.id && m.id.toString() === received.id.toString()) || 
+                                         (m.content === received.content && m.timestamp === received.timestamp));
+            if (exists) return prev;
+            
+            const updated = [...prev, received];
+            // Cache only the last 100 messages for speed
+            localStorage.setItem(`cache_messages_${channelId}`, JSON.stringify(updated.slice(-100)));
+            return updated;
+          });
+        } catch (e) {
+          console.error('Error parsing websocket message:', e);
+        }
       });
     }
 
@@ -101,6 +126,7 @@ const useChat = (channelId) => {
         senderId: getUsername(),
         content: content,
         timestamp: new Date().toISOString()
+        // No ID here, the server will assign one
       };
       
       clientRef.current.publish({

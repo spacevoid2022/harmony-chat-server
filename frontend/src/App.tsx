@@ -139,13 +139,31 @@ function App() {
 }
 
 function ChatView({ onLogout }: { onLogout: () => void }) {
-  const [channels, setChannels] = useState<any[]>([])
-  const [currentChannelId, setCurrentChannelId] = useState<string | null>(null)
+  // Load initial state from localStorage for "instant" feel
+  const [channels, setChannels] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('last_channels');
+      return (saved && saved !== 'undefined') ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Failed to parse cached channels:', e);
+      return [];
+    }
+  })
+  const [currentChannelId, setCurrentChannelId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('last_channel_id');
+    } catch (e) {
+      return null;
+    }
+  })
+  
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [newChannelName, setNewChannelName] = useState('')
   const [inputText, setInputText] = useState('')
   const [showGifPicker, setShowGifPicker] = useState(false)
   
+  const safeId = (id: any) => (id !== null && id !== undefined ? id.toString() : '');
+
   const { messages, sendMessage, isConnected } = useChat(currentChannelId)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const currentUsername = getUsername()
@@ -155,13 +173,24 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
       const resp = await fetch('http://localhost:8088/api/channels')
       if (resp.ok) {
         const data = await resp.json()
-        setChannels(data)
-        if (data.length > 0 && !currentChannelId) {
-          setCurrentChannelId(data[0].id.toString())
+        if (Array.isArray(data)) {
+          setChannels(data)
+          localStorage.setItem('last_channels', JSON.stringify(data));
+          
+          // Re-validate currentChannelId or pick the first one
+          if (data.length > 0) {
+            const exists = data.find(c => safeId(c.id) === currentChannelId);
+            if (!exists || !currentChannelId) {
+              const firstId = safeId(data[0].id);
+              setCurrentChannelId(firstId)
+              localStorage.setItem('last_channel_id', firstId);
+            }
+          }
         }
       }
     } catch (err) {
-      console.error('Failed to fetch channels:', err)
+      console.error('Failed to fetch channels, retrying...', err)
+      setTimeout(fetchChannels, 5000);
     }
   }
 
@@ -197,8 +226,12 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
       })
       if (resp.ok) {
         const created = await resp.json()
-        setChannels([...channels, created])
-        setCurrentChannelId(created.id.toString())
+        const newId = safeId(created.id);
+        const updatedChannels = [...channels, created];
+        setChannels(updatedChannels);
+        localStorage.setItem('last_channels', JSON.stringify(updatedChannels));
+        setCurrentChannelId(newId);
+        localStorage.setItem('last_channel_id', newId);
         setIsModalOpen(false)
         setNewChannelName('')
       }
@@ -212,7 +245,7 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
     return url.match(/\.(jpeg|jpg|gif|png|webp)$/i) != null || url.includes('giphy.com/media');
   }
 
-  const currentChannelName = channels.find(c => c.id.toString() === currentChannelId)?.name || 'General'
+  const currentChannelName = channels.find(c => safeId(c.id) === currentChannelId)?.name || 'General'
 
   return (
     <div className="chat-container">
@@ -222,15 +255,21 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
           <button className="btn-add-channel" onClick={() => setIsModalOpen(true)}>+</button>
         </div>
         <div className="channel-list">
-          {channels.map(channel => (
-            <div 
-              key={channel.id} 
-              className={`channel-item ${currentChannelId === channel.id.toString() ? 'active' : ''}`}
-              onClick={() => setCurrentChannelId(channel.id.toString())}
-            >
-              {channel.name}
-            </div>
-          ))}
+          {channels.map(channel => {
+            const cid = safeId(channel.id);
+            return (
+              <div 
+                key={channel.id} 
+                className={`channel-item ${currentChannelId === cid ? 'active' : ''}`}
+                onClick={() => {
+                  setCurrentChannelId(cid);
+                  localStorage.setItem('last_channel_id', cid);
+                }}
+              >
+                {channel.name}
+              </div>
+            );
+          })}
         </div>
         <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           <button className="btn-logout" onClick={onLogout} style={{ width: '100%' }}>Logout</button>
@@ -254,18 +293,22 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
               {Array.isArray(messages) ? 'No messages yet in this channel.' : 'Loading messages...'}
             </div>
           )}
-          {Array.isArray(messages) && messages.map((m: any, i: number) => (
-            <div key={i} className={`message-item ${m.senderId === currentUsername ? 'own' : ''}`}>
-              <span className="message-sender">{m.senderId}</span>
-              <div className="message-bubble">
-                {isImageUrl(m.content) ? (
-                  <img src={m.content} alt="GIF" className="chat-image" />
-                ) : (
-                  m.content
-                )}
+          {Array.isArray(messages) && messages.map((m: any, i: number) => {
+            const sender = m.senderId || 'Unknown';
+            const isOwn = sender === currentUsername;
+            return (
+              <div key={i} className={`message-item ${isOwn ? 'own' : ''}`}>
+                <span className="message-sender">{sender}</span>
+                <div className="message-bubble">
+                  {isImageUrl(m.content) ? (
+                    <img src={m.content} alt="GIF" className="chat-image" />
+                  ) : (
+                    m.content || '(Empty message)'
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           <div ref={messagesEndRef} />
         </div>
 

@@ -30,7 +30,7 @@ public class ChatController {
                 chatMessage.getContent()
         );
 
-        // Update the timestamp to match the one saved in the DB
+        chatMessage.setId(savedMessage.getId().toString());
         chatMessage.setTimestamp(savedMessage.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 
         // Broadcast the message to all users in the specific channel
