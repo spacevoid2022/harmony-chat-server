@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
-
-const API_BASE_URL = 'http://localhost:8088/auth'
+// @ts-ignore
+import { login, logout, getToken, getUsername } from './services/auth'
+// @ts-ignore
+import useChat from './hooks/useChat'
 
 interface LogEntry {
   type: 'info' | 'success' | 'error'
@@ -10,6 +12,7 @@ interface LogEntry {
 }
 
 function App() {
+  const [token, setToken] = useState<string | null>(getToken())
   const [isLogin, setIsLogin] = useState(true)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -32,41 +35,47 @@ function App() {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [logs])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const endpoint = isLogin ? '/login' : '/register'
-    const payload = isLogin ? { username, password } : { username, email, password }
-
     addLog('info', `Attempting ${isLogin ? 'Login' : 'Registration'} for user: ${username}...`)
 
     try {
-      const resp = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-
-      addLog('info', `Response status: ${resp.status} ${resp.statusText}`)
-
-      if (resp.ok) {
-        const data = await resp.json()
-        addLog('success', `${isLogin ? 'Login' : 'Registration'} successful!`)
-        addLog('success', `Token received: ${data.token.substring(0, 20)}...`)
-        if (!isLogin) {
-          addLog('info', 'Switching to login mode...')
-          setIsLogin(true)
-        }
+      if (isLogin) {
+        const data = await login(username, password)
+        setToken(data.token)
+        addLog('success', 'Login successful!')
       } else {
-        const text = await resp.text()
-        addLog('error', `Error (${resp.status}): ${text || 'Authentication failed'}`)
-        if (resp.status === 404) {
-          addLog('error', 'The endpoint was not found. Please check if the backend is running on the correct port (8080 or 8088).')
+        const resp = await fetch('http://localhost:8088/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        })
+        if (resp.ok) {
+          addLog('success', 'Registration successful! You can now login.')
+          setIsLogin(true)
+        } else {
+          const text = await resp.text()
+          addLog('error', `Registration failed: ${text}`)
         }
       }
     } catch (error: any) {
-      addLog('error', `Network error: ${error.message}`)
-      addLog('error', `Make sure the backend is running at ${API_BASE_URL}`)
+      addLog('error', `Authentication error: ${error.message}`)
     }
+  }
+
+  const handleLogout = () => {
+    logout()
+    setToken(null)
+    addLog('info', 'Logged out successfully.')
+  }
+
+  if (token) {
+    return (
+      <div className="container">
+        <ChatView onLogout={handleLogout} />
+        <LogWindow logs={logs} logEndRef={logEndRef} />
+      </div>
+    )
   }
 
   return (
@@ -74,7 +83,7 @@ function App() {
       <div className="auth-card">
         <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
         
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleAuthSubmit}>
           <div className="form-group">
             <label>Username</label>
             <input 
@@ -123,16 +132,82 @@ function App() {
         </div>
       </div>
 
-      {logs.length > 0 && (
-        <div className="logs">
-          {logs.map((log, index) => (
-            <div key={index} className={`log-entry log-${log.type}`}>
-              [{log.timestamp}] {log.message}
-            </div>
-          ))}
-          <div ref={logEndRef} />
+      <LogWindow logs={logs} logEndRef={logEndRef} />
+    </div>
+  )
+}
+
+function ChatView({ onLogout }: { onLogout: () => void }) {
+  const [inputText, setInputText] = useState('')
+  const { messages, sendMessage, isConnected } = useChat('1') // Hardcoded channel 1
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const currentUsername = getUsername()
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (inputText.trim()) {
+      sendMessage(inputText)
+      setInputText('')
+    }
+  }
+
+  return (
+    <div className="chat-container">
+      <div className="chat-header">
+        <div>
+          <h3>Harmony Chat</h3>
+          <div className="status-indicator">
+            <div className="status-dot"></div>
+            {isConnected ? 'Connected' : 'Connecting...'}
+          </div>
         </div>
-      )}
+        <button className="btn-logout" onClick={onLogout}>Logout</button>
+      </div>
+
+      <div className="message-list">
+        {messages.length === 0 && (
+          <div style={{ textAlign: 'center', color: '#8899af', marginTop: '20px' }}>
+            No messages yet. Start the conversation!
+          </div>
+        )}
+        {messages.map((m: any, i: number) => (
+          <div key={i} className={`message-item ${m.senderId === currentUsername ? 'own' : ''}`}>
+            <span className="message-sender">{m.senderId}</span>
+            <div className="message-bubble">
+              {m.content}
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <form className="chat-input-area" onSubmit={handleSend}>
+        <input 
+          type="text" 
+          value={inputText} 
+          onChange={(e) => setInputText(e.target.value)} 
+          placeholder="Type a message..."
+        />
+        <button type="submit" disabled={!isConnected}>Send</button>
+      </form>
+    </div>
+  )
+}
+
+function LogWindow({ logs, logEndRef }: { logs: LogEntry[], logEndRef: React.RefObject<HTMLDivElement | null> }) {
+  if (logs.length === 0) return null
+  return (
+    <div className="logs">
+      {logs.map((log, index) => (
+        <div key={index} className={`log-entry log-${log.type}`}>
+          [{log.timestamp}] {log.message}
+        </div>
+      ))}
+      <div ref={logEndRef} />
     </div>
   )
 }
