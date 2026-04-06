@@ -1,0 +1,12 @@
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\AuthService.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\UserRepository.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\AuthController.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\config\JwtUtils.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\config\UserDetailsServiceImpl.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\dto\LoginRequest.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\HarmonyChatServerApplication.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\dto\RegisterRequest.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\dto\AuthResponse.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\User.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\config\JwtAuthenticationFilter.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\config\SecurityConfig.java

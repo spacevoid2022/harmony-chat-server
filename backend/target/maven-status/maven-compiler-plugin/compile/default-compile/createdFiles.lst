@@ -1,0 +1,13 @@
+com\app\auth\UserRepository.class
+com\app\config\JwtAuthenticationFilter.class
+com\app\config\JwtUtils.class
+com\app\auth\dto\RegisterRequest.class
+com\app\auth\AuthController.class
+com\app\HarmonyChatServerApplication.class
+com\app\auth\AuthService.class
+com\app\auth\AuthService$1.class
+com\app\auth\dto\LoginRequest.class
+com\app\config\SecurityConfig.class
+com\app\config\UserDetailsServiceImpl.class
+com\app\auth\dto\AuthResponse.class
+com\app\auth\User.class
