@@ -18,6 +18,9 @@ public class ChatController {
     @Autowired
     private ChatService chatService;
 
+    @Autowired
+    private com.app.notifications.NotificationService notificationService;
+
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(ChatMessage chatMessage) {
         // Save the message in PostgreSQL via ChatService
@@ -34,6 +37,13 @@ public class ChatController {
         messagingTemplate.convertAndSend(
                 "/topic/channel/" + chatMessage.getChannelId(),
                 chatMessage
+        );
+
+        // Send a notification for the new message
+        notificationService.notifyNewMessage(
+                chatMessage.getChannelId(),
+                chatMessage.getSenderId(),
+                chatMessage.getContent()
         );
     }
 }
