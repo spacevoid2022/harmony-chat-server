@@ -4,6 +4,7 @@ import './App.css'
 import { login, logout, getToken, getUsername } from './services/auth'
 // @ts-ignore
 import useChat from './hooks/useChat'
+import GifPicker from './components/GifPicker'
 
 interface LogEntry {
   type: 'info' | 'success' | 'error'
@@ -139,6 +140,7 @@ function App() {
 
 function ChatView({ onLogout }: { onLogout: () => void }) {
   const [inputText, setInputText] = useState('')
+  const [showGifPicker, setShowGifPicker] = useState(false)
   const { messages, sendMessage, isConnected } = useChat('1') // Hardcoded channel 1
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const currentUsername = getUsername()
@@ -147,12 +149,21 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSend = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     if (inputText.trim()) {
       sendMessage(inputText)
       setInputText('')
     }
+  }
+
+  const handleGifSelect = (gifUrl: string) => {
+    sendMessage(gifUrl)
+    setShowGifPicker(false)
+  }
+
+  const isImageUrl = (url: string) => {
+    return url.match(/\.(jpeg|jpg|gif|png|webp)$/) != null || url.includes('giphy.com/media');
   }
 
   return (
@@ -178,7 +189,11 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
           <div key={i} className={`message-item ${m.senderId === currentUsername ? 'own' : ''}`}>
             <span className="message-sender">{m.senderId}</span>
             <div className="message-bubble">
-              {m.content}
+              {isImageUrl(m.content) ? (
+                <img src={m.content} alt="GIF" className="chat-image" />
+              ) : (
+                m.content
+              )}
             </div>
           </div>
         ))}
@@ -186,6 +201,7 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
       </div>
 
       <form className="chat-input-area" onSubmit={handleSend}>
+        <button type="button" className="btn-gif" onClick={() => setShowGifPicker(true)}>GIF</button>
         <input 
           type="text" 
           value={inputText} 
@@ -194,6 +210,13 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
         />
         <button type="submit" disabled={!isConnected}>Send</button>
       </form>
+
+      {showGifPicker && (
+        <GifPicker 
+          onSelect={handleGifSelect} 
+          onClose={() => setShowGifPicker(false)} 
+        />
+      )}
     </div>
   )
 }
