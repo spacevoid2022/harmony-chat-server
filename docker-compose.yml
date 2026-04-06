@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=harmony_chat
+      - DB_USER=harmony_user
+      - DB_PASSWORD=harmony_password
+      - JWT_SECRET=super_secret_jwt_key_that_should_be_long_and_secure
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - harmony-network
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=harmony_chat
+      - POSTGRES_USER=harmony_user
+      - POSTGRES_PASSWORD=harmony_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harmony_user -d harmony_chat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - harmony-network
+
+networks:
+  harmony-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
