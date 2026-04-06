@@ -1,73 +1,44 @@
-# React + TypeScript + Vite
+# Harmony Chat
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, Discord-inspired real-time chat application built with Spring Boot, PostgreSQL, React, and Electron.
 
-Currently, two official plugins are available:
+## 🚀 Current Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **JWT Authentication**: Secure login and registration with BCrypt password hashing.
+- **Real-Time Messaging**: WebSocket-based chat using STOMP and SockJS.
+- **Message Persistence**: All chat history is saved in a PostgreSQL database.
+- **Presence Tracking**: Real-time "Online/Offline" status indicators for users.
+- **Global Notifications**: Instant notifications when new messages arrive.
+- **Premium UI**: Dark-themed, glassmorphism design with smooth animations.
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Backend**: Java 17, Spring Boot 3.2.x, Spring Security, Spring Data JPA, WebSockets (STOMP).
+- **Frontend**: React 19, TypeScript, Vite, CSS Modules.
+- **Database**: PostgreSQL.
+- **Desktop**: Electron (Integrated via concurrently).
 
-## Expanding the ESLint configuration
+## 📋 Future Roadmap
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- [ ] **Separate Channels**: Support for multiple text channels within a server.
+- [ ] **Tenor GIF Support**: Integrated GIF picker and rendering.
+- [ ] **File Sharing**: Upload and share images, videos, and documents.
+- [ ] **Screen Sharing**: Real-time video streaming and screen capture.
+- [ ] **Voice Chat**: Low-latency voice channels using WebRTC.
+- [ ] **Direct Messages**: One-on-one private conversations.
+- [ ] **Server Management**: Create, join, and manage custom chat servers.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🏃 Running Locally
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Backend
+1. Ensure Docker is running.
+2. Run `docker compose up --build -d` from the root directory.
+3. Backend will be available at `http://localhost:8088`.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Frontend
+1. Navigate to `frontend/`.
+2. Run `npm install`.
+3. Run `npm start` to launch the Vite dev server and Electron app.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
+Developed with ❤️ by the Harmony Team.
