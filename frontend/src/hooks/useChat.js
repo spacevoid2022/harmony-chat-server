@@ -6,40 +6,55 @@ const useChat = (channelId) => {
   const [messages, setMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const clientRef = useRef(null);
+  const subscriptionRef = useRef(null);
 
-  const onConnect = () => {
+  // Fetch history when channel changes
+  useEffect(() => {
+    if (!channelId) return;
+
+    const fetchHistory = async () => {
+      try {
+        const response = await fetch(`http://localhost:8088/api/channels/${channelId}/messages`);
+        if (response.ok) {
+          const history = await response.json();
+          setMessages(Array.isArray(history) ? history : []);
+        } else {
+          setMessages([]);
+        }
+      } catch (error) {
+        console.error('Error fetching chat history:', error);
+      }
+    };
+
+    fetchHistory();
+  }, [channelId]);
+
+  const onConnect = useCallback(() => {
     setIsConnected(true);
-    console.log('Connected to WebSocket and subscribing to channel:', channelId);
+    console.log('Connected to WebSocket');
     
-    // Subscribe to channel messages
-    clientRef.current.subscribe(`/topic/channel/${channelId}`, (message) => {
-      const receivedMessage = JSON.parse(message.body);
-      setMessages((prevMessages) => [...prevMessages, receivedMessage]);
-      console.log('New message received:', receivedMessage);
-    });
-
-    // Subscribe to presence
+    // Initial subscriptions that don't change with channel
     clientRef.current.subscribe('/topic/presence', (message) => {
       const presenceUpdate = JSON.parse(message.body);
       console.log('Presence update:', presenceUpdate);
     });
     
-    // Subscribe to notifications
     clientRef.current.subscribe('/topic/notifications', (message) => {
       const notification = JSON.parse(message.body);
       console.log('Notification received:', notification);
     });
-  };
+  }, []);
 
-  const onDisconnect = () => {
+  const onDisconnect = useCallback(() => {
     setIsConnected(false);
     console.log('Disconnected from WebSocket');
-  };
+  }, []);
 
-  const onError = (error) => {
+  const onError = useCallback((error) => {
     console.error('WebSocket Error:', error);
-  };
+  }, []);
 
+  // Initialize client once
   useEffect(() => {
     const client = createWebsocketClient(onConnect, onDisconnect, onError);
     clientRef.current = client;
@@ -50,23 +65,48 @@ const useChat = (channelId) => {
         clientRef.current.deactivate();
       }
     };
-  }, [channelId]);
+  }, [onConnect, onDisconnect, onError]);
+
+  // Handle channel specific subscription
+  useEffect(() => {
+    if (isConnected && clientRef.current && channelId) {
+      // Unsubscribe from previous channel if exists
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+      }
+
+      console.log('Subscribing to channel:', channelId);
+      subscriptionRef.current = clientRef.current.subscribe(`/topic/channel/${channelId}`, (message) => {
+        const receivedMessage = JSON.parse(message.body);
+        setMessages((prev) => {
+          // Prevent duplicates if history fetch and websocket message collide
+          if (prev.some(m => m.id === receivedMessage.id && m.id !== null)) return prev;
+          return [...prev, receivedMessage];
+        });
+      });
+    }
+
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+    };
+  }, [isConnected, channelId]);
 
   const sendMessage = useCallback((content) => {
-    if (clientRef.current && isConnected) {
+    if (clientRef.current && isConnected && channelId) {
       const payload = {
         channelId: channelId,
         senderId: getUsername(),
-        content: content
+        content: content,
+        timestamp: new Date().toISOString()
       };
       
-      console.log('Sending message to server:', payload);
       clientRef.current.publish({
         destination: '/app/chat.sendMessage',
         body: JSON.stringify(payload)
       });
-    } else {
-      console.error('Cannot send message, WebSocket not connected');
     }
   }, [channelId, isConnected]);
 

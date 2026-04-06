@@ -139,11 +139,35 @@ function App() {
 }
 
 function ChatView({ onLogout }: { onLogout: () => void }) {
+  const [channels, setChannels] = useState<any[]>([])
+  const [currentChannelId, setCurrentChannelId] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [newChannelName, setNewChannelName] = useState('')
   const [inputText, setInputText] = useState('')
   const [showGifPicker, setShowGifPicker] = useState(false)
-  const { messages, sendMessage, isConnected } = useChat('1') // Hardcoded channel 1
+  
+  const { messages, sendMessage, isConnected } = useChat(currentChannelId)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const currentUsername = getUsername()
+
+  const fetchChannels = async () => {
+    try {
+      const resp = await fetch('http://localhost:8088/api/channels')
+      if (resp.ok) {
+        const data = await resp.json()
+        setChannels(data)
+        if (data.length > 0 && !currentChannelId) {
+          setCurrentChannelId(data[0].id.toString())
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch channels:', err)
+    }
+  }
+
+  useEffect(() => {
+    fetchChannels()
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -162,60 +186,130 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
     setShowGifPicker(false)
   }
 
-  const isImageUrl = (url: string) => {
-    return url.match(/\.(jpeg|jpg|gif|png|webp)$/) != null || url.includes('giphy.com/media');
+  const handleCreateChannel = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newChannelName.trim()) return
+    try {
+      const resp = await fetch('http://localhost:8088/api/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newChannelName })
+      })
+      if (resp.ok) {
+        const created = await resp.json()
+        setChannels([...channels, created])
+        setCurrentChannelId(created.id.toString())
+        setIsModalOpen(false)
+        setNewChannelName('')
+      }
+    } catch (err) {
+      console.error('Failed to create channel:', err)
+    }
   }
+
+  const isImageUrl = (url: string) => {
+    if (!url || typeof url !== 'string') return false;
+    return url.match(/\.(jpeg|jpg|gif|png|webp)$/i) != null || url.includes('giphy.com/media');
+  }
+
+  const currentChannelName = channels.find(c => c.id.toString() === currentChannelId)?.name || 'General'
 
   return (
     <div className="chat-container">
-      <div className="chat-header">
-        <div>
-          <h3>Harmony Chat</h3>
-          <div className="status-indicator">
-            <div className="status-dot"></div>
-            {isConnected ? 'Connected' : 'Connecting...'}
-          </div>
+      <div className="sidebar">
+        <div className="sidebar-header">
+          <h3>Channels</h3>
+          <button className="btn-add-channel" onClick={() => setIsModalOpen(true)}>+</button>
         </div>
-        <button className="btn-logout" onClick={onLogout}>Logout</button>
+        <div className="channel-list">
+          {channels.map(channel => (
+            <div 
+              key={channel.id} 
+              className={`channel-item ${currentChannelId === channel.id.toString() ? 'active' : ''}`}
+              onClick={() => setCurrentChannelId(channel.id.toString())}
+            >
+              {channel.name}
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <button className="btn-logout" onClick={onLogout} style={{ width: '100%' }}>Logout</button>
+        </div>
       </div>
 
-      <div className="message-list">
-        {messages.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#8899af', marginTop: '20px' }}>
-            No messages yet. Start the conversation!
-          </div>
-        )}
-        {messages.map((m: any, i: number) => (
-          <div key={i} className={`message-item ${m.senderId === currentUsername ? 'own' : ''}`}>
-            <span className="message-sender">{m.senderId}</span>
-            <div className="message-bubble">
-              {isImageUrl(m.content) ? (
-                <img src={m.content} alt="GIF" className="chat-image" />
-              ) : (
-                m.content
-              )}
+      <div className="main-chat">
+        <div className="chat-header">
+          <div>
+            <h3># {currentChannelName}</h3>
+            <div className="status-indicator">
+              <div className="status-dot"></div>
+              {isConnected ? 'Connected' : 'Connecting...'}
             </div>
           </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+        </div>
 
-      <form className="chat-input-area" onSubmit={handleSend}>
-        <button type="button" className="btn-gif" onClick={() => setShowGifPicker(true)}>GIF</button>
-        <input 
-          type="text" 
-          value={inputText} 
-          onChange={(e) => setInputText(e.target.value)} 
-          placeholder="Type a message..."
-        />
-        <button type="submit" disabled={!isConnected}>Send</button>
-      </form>
+        <div className="message-list">
+          {(!Array.isArray(messages) || messages.length === 0) && (
+            <div style={{ textAlign: 'center', color: '#8899af', marginTop: '20px' }}>
+              {Array.isArray(messages) ? 'No messages yet in this channel.' : 'Loading messages...'}
+            </div>
+          )}
+          {Array.isArray(messages) && messages.map((m: any, i: number) => (
+            <div key={i} className={`message-item ${m.senderId === currentUsername ? 'own' : ''}`}>
+              <span className="message-sender">{m.senderId}</span>
+              <div className="message-bubble">
+                {isImageUrl(m.content) ? (
+                  <img src={m.content} alt="GIF" className="chat-image" />
+                ) : (
+                  m.content
+                )}
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <form className="chat-input-area" onSubmit={handleSend}>
+          <button type="button" className="btn-gif" onClick={() => setShowGifPicker(true)}>GIF</button>
+          <input 
+            type="text" 
+            value={inputText} 
+            onChange={(e) => setInputText(e.target.value)} 
+            placeholder={`Message #${currentChannelName}`}
+          />
+          <button type="submit" disabled={!isConnected}>Send</button>
+        </form>
+      </div>
 
       {showGifPicker && (
         <GifPicker 
           onSelect={handleGifSelect} 
           onClose={() => setShowGifPicker(false)} 
         />
+      )}
+
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <h3>Create Channel</h3>
+            <form onSubmit={handleCreateChannel}>
+              <div className="form-group">
+                <label>Channel Name</label>
+                <input 
+                  type="text" 
+                  value={newChannelName} 
+                  onChange={(e) => setNewChannelName(e.target.value)}
+                  placeholder="e.g. gaming"
+                  autoFocus
+                />
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                <button type="submit">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   )
