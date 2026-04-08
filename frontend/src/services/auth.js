@@ -1,7 +1,7 @@
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, AUTH_BASE_URL } from '../config';
 
 export const register = async (username, password) => {
-  const resp = await fetch(`${API_BASE_URL}/register`, {
+  const resp = await fetch(`${AUTH_BASE_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
@@ -10,7 +10,7 @@ export const register = async (username, password) => {
 };
 
 export const login = async (username, password) => {
-  const response = await fetch(`${API_BASE_URL}/login`, {
+  const response = await fetch(`${AUTH_BASE_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
