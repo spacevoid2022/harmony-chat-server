@@ -30,6 +30,7 @@ public class WebResourceConfig implements WebMvcConfigurer {
         
         // Map the /uploads/** URL to the physical uploads/ directory
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:" + absolutePath + "/");
+                .addResourceLocations("file:" + absolutePath + "/")
+                .setCachePeriod(0);
     }
 }
