@@ -120,14 +120,14 @@ const useChat = (channelId) => {
     };
   }, [isConnected, channelId]);
 
-  const sendMessage = useCallback((content) => {
+  const sendMessage = useCallback((content, imageUrl = null) => {
     if (clientRef.current && isConnected && channelId) {
       const payload = {
         channelId: channelId,
         senderId: getUsername(),
         content: content,
+        imageUrl: imageUrl,
         timestamp: new Date().toISOString()
-        // No ID here, the server will assign one
       };
       
       clientRef.current.publish({

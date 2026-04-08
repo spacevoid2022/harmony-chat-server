@@ -405,7 +405,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
             ref={fileInputRef} 
             onChange={handleFileUpload} 
             accept="image/*" 
-            className="hidden" 
+            style={{ display: 'none' }} 
           />
           <button type="button" className="btn-gif" onClick={() => setShowGifPicker(true)}>GIF</button>
           <input 
