@@ -1,11 +1,13 @@
 package com.app.chat;
 
-import org.springframework.beans.factory.annotation.Value;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,7 +25,7 @@ public class FileUploadController {
     // Safety check: Only allow these image types
     private final List<String> allowedTypes = Arrays.asList("image/jpeg", "image/png", "image/gif", "image/webp");
     
-    // Safety check: 10MB limit
+    // Safety check: 10MB limit (raw file size)
     private final long maxFileSize = 10 * 1024 * 1024;
 
     @PostMapping("/upload")
@@ -54,8 +56,29 @@ public class FileUploadController {
             String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename().replaceAll("\\s+", "_");
             Path filePath = path.resolve(fileName);
             
-            // Save file
-            Files.copy(file.getInputStream(), filePath);
+            // 3. Image Processing: Scale down if wider than 1000px
+            // GIFs are tricky to resize with Thumbnailator without extra plugins, 
+            // so we only resize non-GIF images or skip if it's already small.
+            if (!"image/gif".equals(contentType)) {
+                BufferedImage originalImage = ImageIO.read(file.getInputStream());
+                if (originalImage != null) {
+                    if (originalImage.getWidth() > 1000) {
+                        Thumbnails.of(originalImage)
+                                .width(1000)
+                                .keepAspectRatio(true)
+                                .toFile(filePath.toFile());
+                    } else {
+                        // Small enough, just save
+                        Files.copy(file.getInputStream(), filePath);
+                    }
+                } else {
+                    // Fallback if ImageIO fails
+                    Files.copy(file.getInputStream(), filePath);
+                }
+            } else {
+                // For GIFs, we just copy to preserve animation
+                Files.copy(file.getInputStream(), filePath);
+            }
 
             // Return the public URL
             String fileUrl = "/uploads/" + fileName;
