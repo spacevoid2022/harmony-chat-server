@@ -31,6 +31,6 @@ public class ChatService {
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
         Message message = new Message(channel, sender, content);
-        return messageRepository.save(message);
+        return messageRepository.saveAndFlush(message);
     }
 }
