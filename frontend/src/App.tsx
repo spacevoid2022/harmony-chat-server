@@ -365,10 +365,14 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
               <div key={i} className={`message-item ${isOwn ? 'own' : ''}`}>
                 <span className="message-sender">{sender}</span>
                 <div className="message-bubble">
-                  {isImageUrl(m.content) ? (
-                    <img src={m.content} alt="GIF" className="chat-image" />
+                  {m.content ? (
+                    isImageUrl(m.content) ? (
+                      <img src={m.content} alt="GIF" className="chat-image" />
+                    ) : (
+                      m.content
+                    )
                   ) : (
-                    m.content || '(Empty message)'
+                    !m.imageUrl && '(Empty message)'
                   )}
                   {m.imageUrl && (
                     <div className="mt-2 rounded overflow-hidden border border-gray-700 max-w-sm">
@@ -388,7 +392,6 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
         </div>
 
         <form className="chat-input-area" onSubmit={handleSend}>
-          <button type="button" className="btn-gif" onClick={() => setShowGifPicker(true)}>GIF</button>
           <button 
             type="button"
             className="btn-upload"
@@ -404,6 +407,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
             accept="image/*" 
             className="hidden" 
           />
+          <button type="button" className="btn-gif" onClick={() => setShowGifPicker(true)}>GIF</button>
           <input 
             type="text" 
             value={inputText} 
