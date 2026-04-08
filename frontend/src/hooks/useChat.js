@@ -1,4 +1,7 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { API_BASE_URL } from '../config';
+import { getUsername } from '../services/auth';
+import { createWebsocketClient } from '../services/websocket';
 
 const useChat = (channelId) => {
   const [messages, setMessages] = useState([]);
