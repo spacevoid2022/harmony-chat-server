@@ -273,6 +273,32 @@ button:active {
   display: flex;
   flex-direction: column;
   background: transparent;
+  min-width: 0; /* Prevents large content from stretching the sidebar */
+}
+
+/* ... existing styles ... */
+
+.chat-image-container {
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 400px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.chat-upload-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: contain;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.chat-upload-image:hover {
+  opacity: 0.9;
 }
 
 /* Modal Styles */

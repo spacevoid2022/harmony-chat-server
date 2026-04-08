@@ -375,11 +375,11 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
                     !m.imageUrl && '(Empty message)'
                   )}
                   {m.imageUrl && (
-                    <div className="mt-2 rounded overflow-hidden border border-gray-700 max-w-sm">
+                    <div className="chat-image-container">
                       <img 
                         src={`${API_BASE_URL}${m.imageUrl}`} 
                         alt="Uploaded content" 
-                        className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                        className="chat-upload-image"
                         onClick={() => window.open(`${API_BASE_URL}${m.imageUrl}`, '_blank')}
                       />
                     </div>
