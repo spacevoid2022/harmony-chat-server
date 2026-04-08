@@ -3,6 +3,7 @@ package com.app.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -60,6 +61,8 @@ public class SecurityConfig {
         config.addAllowedOriginPattern("*");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
+        // Ensure Pre-flight (OPTIONS) is wide open
+        config.setMaxAge(3600L); 
         source.registerCorsConfiguration("/**", config);
         return source;
     }
@@ -70,7 +73,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers("/auth/**").permitAll()
+                        auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Ironclad OPTIONS permission
+                                .requestMatchers("/auth/**").permitAll()
                                 .requestMatchers("/ws/**").permitAll()
                                 .requestMatchers("/api/**").permitAll()
                                 .anyRequest().authenticated()
