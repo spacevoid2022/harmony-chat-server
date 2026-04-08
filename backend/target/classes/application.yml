@@ -1,11 +1,11 @@
 server:
   port: 8080
+
+spring:
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
-
-spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:harmony_chat}
     username: ${DB_USER:postgres}
