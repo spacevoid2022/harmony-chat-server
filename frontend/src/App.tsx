@@ -91,7 +91,7 @@ function App() {
   if (token) {
     return (
       <div className="container">
-        <ChatView onLogout={handleLogout} />
+        <ChatView onLogout={handleLogout} addLog={addLog} />
         <LogWindow logs={logs} logEndRef={logEndRef} />
       </div>
     )
@@ -161,7 +161,7 @@ function App() {
   )
 }
 
-function ChatView({ onLogout }: { onLogout: () => void }) {
+function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: 'info' | 'success' | 'error', message: string) => void }) {
   // Load initial state from localStorage for "instant" feel
   const [channels, setChannels] = useState<any[]>(() => {
     try {
@@ -186,6 +186,46 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
   const [showGifPicker, setShowGifPicker] = useState(false)
   
   const safeId = (id: any) => (id !== null && id !== undefined ? id.toString() : '');
+
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !currentChannelId) return;
+
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      addLog('error', 'File too large (Max 10MB)');
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/upload`, {
+        method: 'POST',
+        body: formData,
+        // No Content-Type header needed, browser handles multipart boundaries
+      });
+
+      if (resp.ok) {
+        const imageUrl = await resp.text();
+        sendMessage('', imageUrl); // Send message with empty content but with imageUrl
+        addLog('success', 'Image uploaded successfully');
+      } else {
+        const error = await resp.text();
+        addLog('error', `Upload failed: ${error}`);
+      }
+    } catch (err) {
+      addLog('error', 'Network error during upload');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const { messages, sendMessage, isConnected } = useChat(currentChannelId)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -330,6 +370,16 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
                   ) : (
                     m.content || '(Empty message)'
                   )}
+                  {m.imageUrl && (
+                    <div className="mt-2 rounded overflow-hidden border border-gray-700 max-w-sm">
+                      <img 
+                        src={`${API_BASE_URL}${m.imageUrl}`} 
+                        alt="Uploaded content" 
+                        className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(`${API_BASE_URL}${m.imageUrl}`, '_blank')}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -339,6 +389,21 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
 
         <form className="chat-input-area" onSubmit={handleSend}>
           <button type="button" className="btn-gif" onClick={() => setShowGifPicker(true)}>GIF</button>
+          <button 
+            type="button"
+            className="btn-upload"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            {isUploading ? '⌛' : '📎'}
+          </button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            accept="image/*" 
+            className="hidden" 
+          />
           <input 
             type="text" 
             value={inputText} 

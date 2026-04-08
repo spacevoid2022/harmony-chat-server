@@ -35,15 +35,23 @@ public class Message {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(length = 512)
+    private String imageUrl;
+
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
     public Message() {}
 
     public Message(Channel channel, User sender, String content) {
+        this(channel, sender, content, null);
+    }
+
+    public Message(Channel channel, User sender, String content, String imageUrl) {
         this.channel = channel;
         this.sender = sender;
         this.content = content;
+        this.imageUrl = imageUrl;
         this.timestamp = LocalDateTime.now();
     }
 
@@ -56,6 +64,8 @@ public class Message {
     public void setSender(User sender) { this.sender = sender; }
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
 }

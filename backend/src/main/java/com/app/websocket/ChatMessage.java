@@ -5,6 +5,7 @@ public class ChatMessage {
     private String channelId;
     private String senderId;
     private String content;
+    private String imageUrl;
     private String timestamp;
 
     public ChatMessage() {}
@@ -28,4 +29,6 @@ public class ChatMessage {
     public void setContent(String content) { this.content = content; }
     public String getTimestamp() { return timestamp; }
     public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 }

@@ -19,18 +19,16 @@ public class ChatService {
     private UserRepository userRepository;
 
     @Transactional
-    public Message saveMessage(Long channelId, String username, String content) {
+    public Message saveMessage(Long channelId, String username, String content, String imageUrl) {
         Channel channel = channelRepository.findById(channelId)
                 .orElseGet(() -> {
-                    // For now, auto-create channel if it doesn't exist to avoid 404s
-                    // though in a real app you'd want proper channel management
                     return channelRepository.save(new Channel("Channel " + channelId));
                 });
 
         User sender = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
-        Message message = new Message(channel, sender, content);
+        Message message = new Message(channel, sender, content, imageUrl);
         return messageRepository.saveAndFlush(message);
     }
 }

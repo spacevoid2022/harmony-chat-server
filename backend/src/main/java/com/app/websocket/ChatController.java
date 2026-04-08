@@ -26,8 +26,9 @@ public class ChatController {
         // Save the message in PostgreSQL via ChatService
         Message savedMessage = chatService.saveMessage(
                 Long.parseLong(chatMessage.getChannelId()),
-                chatMessage.getSenderId(), // Expecting username here
-                chatMessage.getContent()
+                chatMessage.getSenderId(),
+                chatMessage.getContent(),
+                chatMessage.getImageUrl()
         );
 
         chatMessage.setId(savedMessage.getId().toString());

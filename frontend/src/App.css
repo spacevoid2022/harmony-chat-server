@@ -508,3 +508,41 @@ button:active {
   background: rgba(100, 108, 255, 0.1);
   border-color: #646cff;
 }
+
+.btn-upload {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 12px;
+  font-size: 1.2rem;
+  color: #8899af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-upload:hover {
+  background: rgba(100, 108, 255, 0.1);
+  border-color: #646cff;
+  color: #fff;
+}
+
+.image-preview-container {
+  margin-top: 10px;
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.image-preview-container img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.image-preview-container img:hover {
+  opacity: 0.9;
+}

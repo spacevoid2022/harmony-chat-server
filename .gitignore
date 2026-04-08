@@ -24,4 +24,7 @@ dist-ssr
 *.sw?
 
 # Database
+# Uploads
+uploads/
+backend/uploads/
 postgres_data/
