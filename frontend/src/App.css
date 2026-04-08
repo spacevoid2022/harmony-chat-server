@@ -9,13 +9,58 @@
 .auth-card {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  padding: 30px;
+  border-radius: 20px;
   width: 100%;
   max-width: 400px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.server-status {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.server-status .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   transition: all 0.3s ease;
+}
+
+.server-status.online { color: #4ade80; }
+.server-status.online .status-dot { 
+  background: #4ade80; 
+  box-shadow: 0 0 10px #4ade80;
+}
+
+.server-status.offline { color: #f87171; }
+.server-status.offline .status-dot { 
+  background: #f87171;
+  box-shadow: 0 0 10px #f87171;
+}
+
+.server-status.connecting { color: #fbbf24; }
+.server-status.connecting .status-dot { 
+  background: #fbbf24;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
 }
 
 .auth-card:hover {

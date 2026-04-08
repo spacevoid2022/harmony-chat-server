@@ -1,4 +1,13 @@
-const API_BASE_URL = 'http://localhost:8088/auth';
+import { API_BASE_URL } from '../config';
+
+export const register = async (username, password) => {
+  const resp = await fetch(`${API_BASE_URL}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  return resp;
+};
 
 export const login = async (username, password) => {
   const response = await fetch(`${API_BASE_URL}/login`, {

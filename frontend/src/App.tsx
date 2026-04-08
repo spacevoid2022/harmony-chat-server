@@ -5,6 +5,7 @@ import { login, logout, getToken, getUsername } from './services/auth'
 // @ts-ignore
 import useChat from './hooks/useChat'
 import GifPicker from './components/GifPicker'
+import { API_BASE_URL } from './config'
 
 interface LogEntry {
   type: 'info' | 'success' | 'error'
@@ -19,8 +20,25 @@ function App() {
   const [password, setPassword] = useState('')
   const [email, setEmail] = useState('')
   const [logs, setLogs] = useState<LogEntry[]>([])
+  const [serverStatus, setServerStatus] = useState<'connecting' | 'online' | 'offline'>('connecting')
   
   const logEndRef = useRef<HTMLDivElement>(null)
+
+  // Periodically check if the backend is alive
+  useEffect(() => {
+    const checkServer = async () => {
+      try {
+        const resp = await fetch(`${API_BASE_URL}/api/channels`)
+        if (resp.ok) setServerStatus('online')
+        else setServerStatus('offline')
+      } catch (err) {
+        setServerStatus('offline')
+      }
+    }
+    checkServer()
+    const interval = setInterval(checkServer, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   const addLog = (type: 'info' | 'success' | 'error', message: string) => {
     const newLog: LogEntry = {
@@ -46,7 +64,7 @@ function App() {
         setToken(data.token)
         addLog('success', 'Login successful!')
       } else {
-        const resp = await fetch('http://localhost:8088/auth/register', {
+        const resp = await fetch(`${API_BASE_URL}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, email, password })
@@ -82,6 +100,11 @@ function App() {
   return (
     <div className="container">
       <div className="auth-card">
+        <div className={`server-status ${serverStatus}`}>
+          <div className="status-dot"></div>
+          <span>Server: {serverStatus.toUpperCase()}</span>
+        </div>
+
         <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
         
         <form onSubmit={handleAuthSubmit}>
@@ -120,7 +143,7 @@ function App() {
             />
           </div>
 
-          <button type="submit">
+          <button type="submit" disabled={serverStatus !== 'online'}>
             {isLogin ? 'Login' : 'Register'}
           </button>
         </form>
@@ -170,19 +193,21 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
 
   const fetchChannels = async () => {
     try {
-      const resp = await fetch('http://localhost:8088/api/channels')
+      const resp = await fetch(`${API_BASE_URL}/api/channels`)
       if (resp.ok) {
         const data = await resp.json()
         if (Array.isArray(data)) {
           setChannels(data)
           localStorage.setItem('last_channels', JSON.stringify(data));
           
-          // Re-validate currentChannelId or pick the first one
+          // Improved Sync: Check if current IDs still match database names
           if (data.length > 0) {
-            const exists = data.find(c => safeId(c.id) === currentChannelId);
-            if (!exists || !currentChannelId) {
+            const currentObj = data.find(c => safeId(c.id) === currentChannelId);
+            
+            // If the ID exists but the name is different, or it's a fresh start
+            if (!currentObj || !currentChannelId) {
               const firstId = safeId(data[0].id);
-              setCurrentChannelId(firstId)
+              setCurrentChannelId(firstId);
               localStorage.setItem('last_channel_id', firstId);
             }
           }
@@ -219,7 +244,7 @@ function ChatView({ onLogout }: { onLogout: () => void }) {
     e.preventDefault()
     if (!newChannelName.trim()) return
     try {
-      const resp = await fetch('http://localhost:8088/api/channels', {
+      const resp = await fetch(`${API_BASE_URL}/api/channels`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newChannelName })

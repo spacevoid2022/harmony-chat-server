@@ -2,7 +2,9 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getToken } from './auth';
 
-const WEBSOCKET_URL = 'http://localhost:8088/ws';
+import { WS_URL } from '../config';
+
+const WEBSOCKET_URL = WS_URL;
 
 export const createWebsocketClient = (onConnect, onDisconnect, onError) => {
   const client = new Client({

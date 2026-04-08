@@ -1,6 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createWebsocketClient } from '../services/websocket';
-import { getUsername } from '../services/auth';
+import { API_BASE_URL } from '../config';
 
 const useChat = (channelId) => {
   const [messages, setMessages] = useState([]);
@@ -31,7 +29,7 @@ const useChat = (channelId) => {
 
     const fetchHistory = async () => {
       try {
-        const response = await fetch(`http://localhost:8088/api/channels/${channelId}/messages`);
+        const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/messages`);
         if (response.ok) {
           const history = await response.json();
           const validHistory = Array.isArray(history) ? history : [];
