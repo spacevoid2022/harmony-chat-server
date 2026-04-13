@@ -1,8 +1,7 @@
 export const isProd = true;
-const CLOUD_IP = '64.181.206.113';
 
 export const API_BASE_URL = isProd 
-  ? `http://${CLOUD_IP}:8082` 
+  ? 'https://harmonychat.duckdns.org' 
   : 'http://localhost:8082';
 
 export const WS_URL = `${API_BASE_URL}/ws`;
