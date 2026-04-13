@@ -74,7 +74,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Ironclad OPTIONS permission
-                                .requestMatchers("/auth/**", "/api/channels/**", "/ws/**", "/uploads/**", "/api/upload").permitAll()
+                                .requestMatchers("/auth/**", "/api/channels/**", "/ws/**", "/uploads/**", "/api/upload", "/error").permitAll()
                                 .requestMatchers("/ws/**").permitAll()
                                 .requestMatchers("/api/**").permitAll()
                                 .anyRequest().authenticated()
