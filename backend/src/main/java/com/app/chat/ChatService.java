@@ -31,4 +31,15 @@ public class ChatService {
         Message message = new Message(channel, sender, content, imageUrl);
         return messageRepository.saveAndFlush(message);
     }
+    @Transactional
+    public boolean deleteMessage(Long messageId, String username) {
+        return messageRepository.findById(messageId)
+                .map(message -> {
+                    if (message.getSender().getUsername().equals(username)) {
+                        messageRepository.delete(message);
+                        return true;
+                    }
+                    return false;
+                }).orElse(false);
+    }
 }

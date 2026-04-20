@@ -95,6 +95,16 @@ const useChat = (channelId) => {
       subscriptionRef.current = clientRef.current.subscribe(`/topic/channel/${channelId}`, (msg) => {
         try {
           const received = JSON.parse(msg.body);
+          
+          if (received.type === 'DELETE') {
+            setMessages((prev) => {
+              const updated = prev.filter(m => m.id?.toString() !== received.id?.toString());
+              localStorage.setItem(`cache_messages_${channelId}`, JSON.stringify(updated.slice(-100)));
+              return updated;
+            });
+            return;
+          }
+
           setMessages((prev) => {
             // deduplicate by id or content+timestamp
             const exists = prev.some(m => (m.id && received.id && m.id.toString() === received.id.toString()) || 
@@ -137,7 +147,23 @@ const useChat = (channelId) => {
     }
   }, [channelId, isConnected]);
 
-  return { messages, sendMessage, isConnected };
+  const deleteMessage = useCallback((messageId) => {
+    if (clientRef.current && isConnected && channelId) {
+      const payload = {
+        id: messageId.toString(),
+        channelId: channelId,
+        senderId: getUsername(),
+        type: 'DELETE'
+      };
+      
+      clientRef.current.publish({
+        destination: '/app/chat.deleteMessage',
+        body: JSON.stringify(payload)
+      });
+    }
+  }, [channelId, isConnected]);
+
+  return { messages, sendMessage, deleteMessage, isConnected };
 };
 
 export default useChat;

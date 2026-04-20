@@ -7,6 +7,7 @@ public class ChatMessage {
     private String content;
     private String imageUrl;
     private String timestamp;
+    private String type = "CHAT"; // CHAT or DELETE
 
     public ChatMessage() {}
 
@@ -31,4 +32,6 @@ public class ChatMessage {
     public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 }

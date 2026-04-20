@@ -47,4 +47,21 @@ public class ChatController {
                 chatMessage.getContent()
         );
     }
+
+    @MessageMapping("/chat.deleteMessage")
+    public void deleteMessage(ChatMessage chatMessage) {
+        boolean success = chatService.deleteMessage(
+                Long.parseLong(chatMessage.getId()),
+                chatMessage.getSenderId()
+        );
+
+        if (success) {
+            chatMessage.setType("DELETE");
+            // Broadcast the deletion event to all users in the specific channel
+            messagingTemplate.convertAndSend(
+                    "/topic/channel/" + chatMessage.getChannelId(),
+                    chatMessage
+            );
+        }
+    }
 }
