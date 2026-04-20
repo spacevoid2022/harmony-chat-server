@@ -8,6 +8,7 @@ com\app\HarmonyChatServerApplication.class
 com\app\config\GlobalExceptionHandler.class
 com\app\auth\dto\LoginRequest.class
 com\app\chat\MessageRepository.class
+com\app\chat\MessageController.class
 com\app\presence\PresenceService.class
 com\app\websocket\WebSocketConfig.class
 com\app\config\UserDetailsServiceImpl.class

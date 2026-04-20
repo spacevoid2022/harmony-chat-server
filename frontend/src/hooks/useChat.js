@@ -148,9 +148,13 @@ const useChat = (channelId) => {
     }
   }, [channelId, isConnected]);
 
-  const deleteMessage = useCallback((messageId) => {
+  const deleteMessage = useCallback(async (messageId) => {
     if (clientRef.current && isConnected && channelId) {
       console.log('DEBUG: Sending DELETE request for messageId:', messageId);
+      
+      // OPTIONAL: Diagnostic alert to confirm UI trigger
+      // window.alert('DEBUG: Deleting message ' + messageId);
+
       const payload = {
         id: messageId.toString(),
         channelId: channelId,
@@ -158,10 +162,27 @@ const useChat = (channelId) => {
         type: 'DELETE'
       };
       
+      // Try WebSocket first
       clientRef.current.publish({
         destination: '/app/chat.deleteMessage',
         body: JSON.stringify(payload)
       });
+
+      // Fallback: Also try REST if the message is still there after 1s
+      setTimeout(async () => {
+        try {
+          const resp = await fetch(`${API_BASE_URL}/api/messages/${messageId}?username=${getUsername()}`, {
+            method: 'DELETE'
+          });
+          if (resp.ok) {
+            console.log('DEBUG: REST Delete success for ID:', messageId);
+            // Manually update state if REST succeeded (WebSocket might have missed it)
+            setMessages(prev => prev.filter(m => m.id?.toString() !== messageId.toString()));
+          }
+        } catch (err) {
+          console.error('DEBUG: REST Fallback failed:', err);
+        }
+      }, 1500);
     }
   }, [channelId, isConnected]);
 

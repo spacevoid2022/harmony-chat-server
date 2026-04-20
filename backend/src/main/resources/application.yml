@@ -23,6 +23,7 @@ logging:
   level:
     org.springframework.web: DEBUG
     org.springframework.security: DEBUG
+    org.springframework.messaging: DEBUG
 
 app:
   jwt:

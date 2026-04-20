@@ -21,6 +21,7 @@ C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\presence\WebSoc
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\ChannelController.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\config\SecurityConfig.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\FileUploadController.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\MessageController.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\websocket\ChatController.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\websocket\ChatMessage.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\config\JwtAuthenticationFilter.java
