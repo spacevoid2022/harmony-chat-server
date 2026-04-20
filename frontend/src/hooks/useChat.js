@@ -97,6 +97,7 @@ const useChat = (channelId) => {
           const received = JSON.parse(msg.body);
           
           if (received.type === 'DELETE') {
+            console.log('DEBUG: DELETE event received via WebSocket for ID:', received.id);
             setMessages((prev) => {
               const updated = prev.filter(m => m.id?.toString() !== received.id?.toString());
               localStorage.setItem(`cache_messages_${channelId}`, JSON.stringify(updated.slice(-100)));
@@ -149,6 +150,7 @@ const useChat = (channelId) => {
 
   const deleteMessage = useCallback((messageId) => {
     if (clientRef.current && isConnected && channelId) {
+      console.log('DEBUG: Sending DELETE request for messageId:', messageId);
       const payload = {
         id: messageId.toString(),
         channelId: channelId,

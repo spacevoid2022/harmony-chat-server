@@ -35,11 +35,16 @@ public class ChatService {
     public boolean deleteMessage(Long messageId, String username) {
         return messageRepository.findById(messageId)
                 .map(message -> {
-                    if (message.getSender().getUsername().equals(username)) {
+                    String senderName = message.getSender().getUsername();
+                    System.out.println("DEBUG: Verifying deletion. MessageSender: " + senderName + ", RequestedBy: " + username);
+                    if (senderName.equals(username)) {
                         messageRepository.delete(message);
                         return true;
                     }
                     return false;
-                }).orElse(false);
+                }).orElseGet(() -> {
+                    System.out.println("DEBUG: Message with ID " + messageId + " not found in DB.");
+                    return false;
+                });
     }
 }
