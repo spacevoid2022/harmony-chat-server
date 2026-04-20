@@ -370,7 +370,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
           )}
           {Array.isArray(messages) && messages.map((m: any, i: number) => {
             const sender = m.senderId || 'Unknown';
-            const isOwn = sender === currentUsername;
+            const isOwn = sender.toLowerCase() === (currentUsername || '').toLowerCase();
             return (
               <div key={i} className={`message-item ${isOwn ? 'own' : ''}`}>
                 <span className="message-sender">{sender}</span>
