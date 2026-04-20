@@ -375,17 +375,19 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
               <div key={i} className={`message-item ${isOwn ? 'own' : ''}`}>
                 <span className="message-sender">{sender}</span>
                 <div className="message-bubble">
-                  <button 
-                    className="btn-delete-message" 
-                    onClick={() => {
-                      if (m.id && window.confirm('Delete this message?')) {
-                        deleteMessage(m.id);
-                      }
-                    }}
-                    title="Delete message"
-                  >
-                    🗑️
-                  </button>
+                  {isOwn && (
+                    <button 
+                      className="btn-delete-message" 
+                      onClick={() => {
+                        if (m.id && window.confirm('Delete this message?')) {
+                          deleteMessage(m.id);
+                        }
+                      }}
+                      title="Delete message"
+                    >
+                      🗑️
+                    </button>
+                  )}
                   {m.content ? (
                     isImageUrl(m.content) ? (
                       <img src={m.content} alt="GIF" className="chat-image" />
