@@ -35,13 +35,9 @@ public class ChatService {
     public boolean deleteMessage(Long messageId, String username) {
         return messageRepository.findById(messageId)
                 .map(message -> {
-                    String senderName = message.getSender().getUsername();
-                    System.out.println("DEBUG: Verifying deletion. MessageSender: " + senderName + ", RequestedBy: " + username);
-                    if (senderName.equals(username)) {
-                        messageRepository.delete(message);
-                        return true;
-                    }
-                    return false;
+                    System.out.println("DEBUG: Universal deletion triggered for messageId: " + messageId + " by " + username);
+                    messageRepository.delete(message);
+                    return true;
                 }).orElseGet(() -> {
                     System.out.println("DEBUG: Message with ID " + messageId + " not found in DB.");
                     return false;

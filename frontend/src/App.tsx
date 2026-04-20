@@ -230,7 +230,6 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
 
   const { messages, sendMessage, deleteMessage, isConnected } = useChat(currentChannelId)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const currentUsername = getUsername()
 
   const fetchChannels = async () => {
     try {
@@ -370,24 +369,23 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
           )}
           {Array.isArray(messages) && messages.map((m: any, i: number) => {
             const sender = m.senderId || 'Unknown';
+            const currentUsername = getUsername();
             const isOwn = sender.toLowerCase() === (currentUsername || '').toLowerCase();
             return (
               <div key={i} className={`message-item ${isOwn ? 'own' : ''}`}>
                 <span className="message-sender">{sender}</span>
                 <div className="message-bubble">
-                  {isOwn && (
-                    <button 
-                      className="btn-delete-message" 
-                      onClick={() => {
-                        if (m.id && window.confirm('Delete this message?')) {
-                          deleteMessage(m.id);
-                        }
-                      }}
-                      title="Delete message"
-                    >
-                      🗑️
-                    </button>
-                  )}
+                  <button 
+                    className="btn-delete-message" 
+                    onClick={() => {
+                      if (m.id && window.confirm('Delete this message?')) {
+                        deleteMessage(m.id);
+                      }
+                    }}
+                    title="Delete message"
+                  >
+                    🗑️
+                  </button>
                   {m.content ? (
                     isImageUrl(m.content) ? (
                       <img src={m.content} alt="GIF" className="chat-image" />
