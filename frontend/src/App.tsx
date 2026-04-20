@@ -184,6 +184,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
   const [newChannelName, setNewChannelName] = useState('')
   const [inputText, setInputText] = useState('')
   const [showGifPicker, setShowGifPicker] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(false)
   
   const safeId = (id: any) => (id !== null && id !== undefined ? id.toString() : '');
 
@@ -314,7 +315,12 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
 
   return (
     <div className="chat-container">
-      <div className="sidebar">
+      {/* Mobile sidebar overlay */}
+      {showSidebar && (
+        <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />
+      )}
+
+      <div className={`sidebar ${showSidebar ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header">
           <h3>Channels</h3>
           <button className="btn-add-channel" onClick={() => setIsModalOpen(true)}>+</button>
@@ -329,6 +335,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
                 onClick={() => {
                   setCurrentChannelId(cid);
                   localStorage.setItem('last_channel_id', cid);
+                  setShowSidebar(false); // Auto-close on mobile
                 }}
               >
                 {channel.name}
@@ -343,6 +350,9 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
 
       <div className="main-chat">
         <div className="chat-header">
+          <button className="btn-menu" onClick={() => setShowSidebar(s => !s)} aria-label="Toggle sidebar">
+            ☰
+          </button>
           <div>
             <h3># {currentChannelName}</h3>
             <div className="status-indicator">

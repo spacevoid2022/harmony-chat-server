@@ -14,6 +14,7 @@
   width: 100%;
   max-width: 400px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   position: relative;
 }
@@ -197,10 +198,13 @@ button:active {
 
 .sidebar {
   width: 260px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(20px);
   border-right: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
 }
 
 .sidebar-header {
@@ -338,6 +342,30 @@ button:active {
   color: #8899af;
 }
 
+.btn-menu {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  margin-right: 15px;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 90;
+  animation: fadeIn 0.3s ease;
+}
+
 .chat-header {
   padding: 20px;
   background: rgba(255, 255, 255, 0.02);
@@ -398,11 +426,13 @@ button:active {
 .message-item.own .message-bubble {
   background: linear-gradient(135deg, #646cff, #4b52ff);
   border-top-right-radius: 2px;
+  box-shadow: 0 4px 15px rgba(100, 108, 255, 0.2);
 }
 
 .message-item:not(.own) .message-bubble {
   background: rgba(255, 255, 255, 0.08);
   border-top-left-radius: 2px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .chat-input-area {
@@ -573,4 +603,74 @@ button:active {
 
 .image-preview-container img:hover {
   opacity: 0.9;
+}
+
+/* Mobile Media Queries */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+
+  .auth-card {
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .chat-container {
+    height: 95vh;
+    border-radius: 16px;
+    position: relative;
+  }
+
+  .sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    transform: translateX(-100%);
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+  }
+
+  .sidebar-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .btn-menu {
+    display: block;
+  }
+
+  .message-item {
+    max-width: 85%;
+  }
+
+  .chat-header {
+    padding: 12px 16px;
+  }
+
+  .chat-header h3 {
+    font-size: 1rem;
+  }
+
+  .chat-input-area {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .chat-input-area button {
+    padding: 0 12px;
+  }
+
+  .message-list {
+    padding: 15px;
+  }
+
+  .modal-card {
+    width: 90%;
+    padding: 20px;
+  }
 }
