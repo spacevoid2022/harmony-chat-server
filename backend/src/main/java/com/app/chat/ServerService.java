@@ -82,6 +82,13 @@ public class ServerService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
+        // Auto-join UCM if not a member
+        serverRepository.findByName("UCM").ifPresent(ucm -> {
+            if (!serverMemberRepository.existsByServerAndUser(ucm, user)) {
+                joinServer(ucm.getId(), user.getId());
+            }
+        });
+
         return serverMemberRepository.findByUser(user).stream()
                 .map(ServerMember::getServer)
                 .collect(Collectors.toList());
