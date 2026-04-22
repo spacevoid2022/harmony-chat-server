@@ -25,8 +25,28 @@ public class ServerService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
     @PostConstruct
     public void init() {
+        // Drop legacy unique constraint on channel name if it exists (fixes 400 Bad Request on server creation)
+        try {
+            List<java.util.Map<String, Object>> constraints = jdbcTemplate.queryForList(
+                "SELECT constraint_name FROM information_schema.table_constraints " +
+                "WHERE table_name = 'channels' AND constraint_type = 'UNIQUE'"
+            );
+            for (java.util.Map<String, Object> constraint : constraints) {
+                String constraintName = (String) constraint.get("constraint_name");
+                // Don't drop primary key constraints, just in case
+                if (!constraintName.toLowerCase().contains("pkey")) {
+                    jdbcTemplate.execute("ALTER TABLE channels DROP CONSTRAINT " + constraintName);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("No unique constraints to drop or DB error: " + e.getMessage());
+        }
+
         createDefaultUcmServer();
     }
 
