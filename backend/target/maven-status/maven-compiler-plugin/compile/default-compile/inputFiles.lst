@@ -1,6 +1,8 @@
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\AuthService.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\Message.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\ServerService.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\dto\RegisterRequest.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\ServerMemberRepository.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\dto\AuthResponse.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\User.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\presence\PresenceService.java
@@ -9,6 +11,7 @@ C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\UserReposi
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\config\WebResourceConfig.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\dto\LoginRequest.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\HarmonyChatServerApplication.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\Server.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\Channel.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\notifications\NotificationService.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\AuthController.java
@@ -17,9 +20,12 @@ C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\config\UserDeta
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\config\GlobalExceptionHandler.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\ChannelRepository.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\websocket\WebSocketConfig.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\ServerMember.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\presence\WebSocketEventListener.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\ChannelController.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\ServerRepository.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\config\SecurityConfig.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\ServerController.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\FileUploadController.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\MessageController.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\websocket\ChatController.java

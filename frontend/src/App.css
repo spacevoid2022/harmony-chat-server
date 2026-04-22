@@ -208,8 +208,8 @@ button:active {
 .chat-container {
   display: flex;
   width: 100%;
-  max-width: 1100px;
-  height: 85vh;
+  max-width: 1300px;
+  height: 90vh;
   background: rgba(15, 15, 15, 0.6);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -217,6 +217,76 @@ button:active {
   overflow: hidden;
   box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
   animation: fadeIn 0.4s ease-out;
+}
+
+.server-dock {
+  width: 72px;
+  background: rgba(5, 5, 5, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.server-icon {
+  width: 48px;
+  height: 48px;
+  background: #2b2d31;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  color: #dbdee1;
+  font-weight: 600;
+  font-size: 1.1rem;
+  position: relative;
+}
+
+.server-icon:hover, .server-icon.active {
+  border-radius: 16px;
+  background: #5865f2;
+  color: #fff;
+}
+
+.server-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.server-icon.add-server {
+  background: #2b2d31;
+  color: #23a559;
+}
+
+.server-icon.add-server:hover {
+  background: #23a559;
+  color: #fff;
+}
+
+.server-indicator {
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 0;
+  background: #fff;
+  border-radius: 0 4px 4px 0;
+  transition: height 0.2s ease;
+}
+
+.server-icon.active .server-indicator {
+  height: 32px;
+}
+
+.server-icon:hover .server-indicator {
+  height: 20px;
 }
 
 @keyframes fadeIn {

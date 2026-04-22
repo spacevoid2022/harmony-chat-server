@@ -178,16 +178,17 @@ function App() {
 }
 
 function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: 'info' | 'success' | 'error', message: string) => void }) {
-  // Load initial state from localStorage for "instant" feel
-  const [channels, setChannels] = useState<any[]>(() => {
+  const [servers, setServers] = useState<any[]>([])
+  const [currentServerId, setCurrentServerId] = useState<string | null>(() => {
     try {
-      const saved = localStorage.getItem('last_channels');
-      return (saved && saved !== 'undefined') ? JSON.parse(saved) : [];
+      return localStorage.getItem('last_server_id');
     } catch (e) {
-      console.error('Failed to parse cached channels:', e);
-      return [];
+      return null;
     }
   })
+
+  // Load initial state from localStorage for "instant" feel
+  const [channels, setChannels] = useState<any[]>([])
   const [currentChannelId, setCurrentChannelId] = useState<string | null>(() => {
     try {
       return localStorage.getItem('last_channel_id');
@@ -197,6 +198,8 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
   })
   
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isServerModalOpen, setIsServerModalOpen] = useState(false)
+  const [newServerName, setNewServerName] = useState('')
   const [newChannelName, setNewChannelName] = useState('')
   const [inputText, setInputText] = useState('')
   const [showGifPicker, setShowGifPicker] = useState(false)
@@ -247,21 +250,38 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
   const { messages, sendMessage, deleteMessage, isConnected } = useChat(currentChannelId)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const fetchChannels = async () => {
+  const fetchServers = async () => {
     try {
-      const resp = await fetch(`${API_BASE_URL}/api/channels`)
+      const resp = await fetch(`${API_BASE_URL}/api/servers`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      })
+      if (resp.ok) {
+        const data = await resp.json()
+        setServers(data)
+        if (data.length > 0 && !currentServerId) {
+          const firstId = safeId(data[0].id);
+          setCurrentServerId(firstId);
+          localStorage.setItem('last_server_id', firstId);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch servers:', err)
+    }
+  }
+
+  const fetchChannels = async () => {
+    if (!currentServerId) return;
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/servers/${currentServerId}/channels`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      })
       if (resp.ok) {
         const data = await resp.json()
         if (Array.isArray(data)) {
           setChannels(data)
-          localStorage.setItem('last_channels', JSON.stringify(data));
-          
-          // Improved Sync: Check if current IDs still match database names
           if (data.length > 0) {
             const currentObj = data.find(c => safeId(c.id) === currentChannelId);
-            
-            // If the ID exists but the name is different, or it's a fresh start
-            if (!currentObj || !currentChannelId) {
+            if (!currentObj) {
               const firstId = safeId(data[0].id);
               setCurrentChannelId(firstId);
               localStorage.setItem('last_channel_id', firstId);
@@ -270,14 +290,19 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
         }
       }
     } catch (err) {
-      console.error('Failed to fetch channels, retrying...', err)
-      setTimeout(fetchChannels, 5000);
+      console.error('Failed to fetch channels:', err)
     }
   }
 
   useEffect(() => {
-    fetchChannels()
+    fetchServers()
   }, [])
+
+  useEffect(() => {
+    if (currentServerId) {
+      fetchChannels()
+    }
+  }, [currentServerId])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -296,23 +321,48 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
     setShowGifPicker(false)
   }
 
+  const handleCreateServer = async (e: React.FormEvent, iconUrl: string = '') => {
+    e.preventDefault()
+    if (!newServerName.trim()) return
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/servers`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify({ name: newServerName, iconUrl })
+      })
+      if (resp.ok) {
+        const created = await resp.json()
+        setServers(prev => [...prev, created])
+        setCurrentServerId(safeId(created.id))
+        localStorage.setItem('last_server_id', safeId(created.id))
+        setIsServerModalOpen(false)
+        setNewServerName('')
+      }
+    } catch (err) {
+      console.error('Failed to create server:', err)
+    }
+  }
+
   const handleCreateChannel = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newChannelName.trim()) return
+    if (!newChannelName.trim() || !currentServerId) return
     try {
-      const resp = await fetch(`${API_BASE_URL}/api/channels`, {
+      const resp = await fetch(`${API_BASE_URL}/api/channels?serverId=${currentServerId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
         body: JSON.stringify({ name: newChannelName })
       })
       if (resp.ok) {
         const created = await resp.json()
-        const newId = safeId(created.id);
-        const updatedChannels = [...channels, created];
-        setChannels(updatedChannels);
-        localStorage.setItem('last_channels', JSON.stringify(updatedChannels));
-        setCurrentChannelId(newId);
-        localStorage.setItem('last_channel_id', newId);
+        setChannels(prev => [...prev, created])
+        setCurrentChannelId(safeId(created.id))
+        localStorage.setItem('last_channel_id', safeId(created.id))
         setIsModalOpen(false)
         setNewChannelName('')
       }
@@ -330,11 +380,35 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
 
   return (
     <div className="chat-container">
-      {/* Mobile sidebar overlay */}
-      {showSidebar && (
-        <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />
-      )}
+      {/* 1. Server Dock (Far Left) */}
+      <div className="server-dock">
+        {servers.map(server => {
+          const sid = safeId(server.id);
+          return (
+            <div 
+              key={server.id} 
+              className={`server-icon ${currentServerId === sid ? 'active' : ''}`}
+              onClick={() => {
+                setCurrentServerId(sid);
+                localStorage.setItem('last_server_id', sid);
+              }}
+              title={server.name}
+            >
+              <div className="server-indicator" />
+              {server.iconUrl ? (
+                <img src={server.iconUrl.startsWith('/') ? `${API_BASE_URL}${server.iconUrl}` : server.iconUrl} alt={server.name} />
+              ) : (
+                server.name.substring(0, 2).toUpperCase()
+              )}
+            </div>
+          );
+        })}
+        <div className="server-icon add-server" onClick={() => setIsServerModalOpen(true)} title="Add Server">
+          +
+        </div>
+      </div>
 
+      {/* 2. Channel Sidebar (Middle) */}
       <div className={`sidebar ${showSidebar ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header">
           <h3>Channels</h3>
@@ -350,10 +424,10 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
                 onClick={() => {
                   setCurrentChannelId(cid);
                   localStorage.setItem('last_channel_id', cid);
-                  setShowSidebar(false); // Auto-close on mobile
+                  setShowSidebar(false);
                 }}
               >
-                {channel.name}
+                # {channel.name}
               </div>
             );
           })}
@@ -363,11 +437,10 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
         </div>
       </div>
 
+      {/* 3. Main Chat (Right) */}
       <div className="main-chat">
         <div className="chat-header">
-          <button className="btn-menu" onClick={() => setShowSidebar(s => !s)} aria-label="Toggle sidebar">
-            ☰
-          </button>
+          <button className="btn-menu" onClick={() => setShowSidebar(s => !s)}>☰</button>
           <div>
             <h3># {currentChannelName}</h3>
             <div className="status-indicator">
@@ -413,12 +486,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
                   )}
                   {m.imageUrl && (
                     <div className="chat-image-container">
-                      <img 
-                        src={`${API_BASE_URL}${m.imageUrl}`} 
-                        alt="Uploaded content" 
-                        className="chat-upload-image"
-                        onClick={() => window.open(`${API_BASE_URL}${m.imageUrl}`, '_blank')}
-                      />
+                      <img src={`${API_BASE_URL}${m.imageUrl}`} alt="Upload" className="chat-upload-image" />
                     </div>
                   )}
                 </div>
@@ -430,36 +498,44 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
 
         <form className="chat-input-area" onSubmit={handleSend}>
           <button 
-            type="button"
-            className="btn-upload"
+            type="button" 
+            className="btn-upload" 
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
           >
             {isUploading ? '⌛' : '📎'}
           </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileUpload} 
-            accept="image/*" 
-            style={{ display: 'none' }} 
-          />
+          <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" style={{ display: 'none' }} />
           <button type="button" className="btn-gif" onClick={() => setShowGifPicker(true)}>GIF</button>
-          <input 
-            type="text" 
-            value={inputText} 
-            onChange={(e) => setInputText(e.target.value)} 
-            placeholder={`Message #${currentChannelName}`}
-          />
-          <button type="submit" disabled={!isConnected}>Send</button>
+          <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder={`Message #${currentChannelName}`} />
+          <button type="submit">Send</button>
         </form>
+
+        {showGifPicker && (
+          <GifPicker 
+            onSelect={handleGifSelect} 
+            onClose={() => setShowGifPicker(false)} 
+          />
+        )}
       </div>
 
-      {showGifPicker && (
-        <GifPicker 
-          onSelect={handleGifSelect} 
-          onClose={() => setShowGifPicker(false)} 
-        />
+      {/* Modals */}
+      {isServerModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <h3>Create Server</h3>
+            <form onSubmit={(e) => handleCreateServer(e)}>
+              <div className="form-group">
+                <label>Server Name</label>
+                <input type="text" value={newServerName} onChange={(e) => setNewServerName(e.target.value)} placeholder="e.g. My Cool Server" autoFocus />
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-cancel" onClick={() => setIsServerModalOpen(false)}>Cancel</button>
+                <button type="submit">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {isModalOpen && (
@@ -469,13 +545,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
             <form onSubmit={handleCreateChannel}>
               <div className="form-group">
                 <label>Channel Name</label>
-                <input 
-                  type="text" 
-                  value={newChannelName} 
-                  onChange={(e) => setNewChannelName(e.target.value)}
-                  placeholder="e.g. gaming"
-                  autoFocus
-                />
+                <input type="text" value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)} placeholder="e.g. general" autoFocus />
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>Cancel</button>

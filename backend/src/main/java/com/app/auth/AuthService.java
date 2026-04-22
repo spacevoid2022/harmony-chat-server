@@ -4,6 +4,8 @@ import com.app.auth.dto.AuthResponse;
 import com.app.auth.dto.LoginRequest;
 import com.app.auth.dto.RegisterRequest;
 import com.app.config.JwtUtils;
+import com.app.chat.ServerRepository;
+import com.app.chat.ServerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,6 +22,12 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ServerRepository serverRepository;
+
+    @Autowired
+    private ServerService serverService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -47,8 +55,13 @@ public class AuthService {
                 passwordEncoder.encode(registerRequest.getPassword())
         );
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
         
+        // Auto-enroll in UCM server
+        serverRepository.findByName("UCM").ifPresent(ucm -> {
+            serverService.joinServer(ucm.getId(), savedUser.getId());
+        });
+
         return login(new LoginRequest() {{
             setUsername(registerRequest.getUsername());
             setPassword(registerRequest.getPassword());

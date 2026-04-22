@@ -16,21 +16,19 @@ public class ChannelController {
     @Autowired
     private MessageRepository messageRepository;
 
+    @Autowired
+    private ServerRepository serverRepository;
+
     @GetMapping
     public List<Channel> getAllChannels() {
-        // Ensure at least one channel exists
-        List<Channel> channels = channelRepository.findAll();
-        if (channels.isEmpty()) {
-            Channel general = new Channel();
-            general.setName("general");
-            channelRepository.save(general);
-            return List.of(general);
-        }
-        return channels;
+        return channelRepository.findAll();
     }
 
     @PostMapping
-    public Channel createChannel(@RequestBody Channel channel) {
+    public Channel createChannel(@RequestBody Channel channel, @RequestParam Long serverId) {
+        Server server = serverRepository.findById(serverId)
+                .orElseThrow(() -> new RuntimeException("Server not found"));
+        channel.setServer(server);
         return channelRepository.save(channel);
     }
 

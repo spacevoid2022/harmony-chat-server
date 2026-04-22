@@ -18,11 +18,15 @@ public class ChatService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ServerRepository serverRepository;
+
     @Transactional
     public Message saveMessage(Long channelId, String username, String content, String imageUrl) {
         Channel channel = channelRepository.findById(channelId)
                 .orElseGet(() -> {
-                    return channelRepository.save(new Channel("Channel " + channelId));
+                    Server ucm = serverRepository.findByName("UCM").orElse(null);
+                    return channelRepository.save(new Channel("Channel " + channelId, ucm));
                 });
 
         User sender = userRepository.findByUsername(username)
