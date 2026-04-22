@@ -754,17 +754,32 @@ button:active {
     position: relative;
   }
 
-  .sidebar {
+  .server-dock {
     position: absolute;
     top: 0;
     left: 0;
     bottom: 0;
-    width: 280px;
+    z-index: 102;
     transform: translateX(-100%);
-    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .sidebar-open {
+  .server-dock.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .sidebar {
+    position: absolute;
+    top: 0;
+    left: 72px; /* Next to the server dock */
+    bottom: 0;
+    width: 250px;
+    transform: translateX(-150%);
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+    z-index: 101;
+  }
+
+  .sidebar.sidebar-open {
     transform: translateX(0);
   }
 

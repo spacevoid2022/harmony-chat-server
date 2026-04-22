@@ -255,6 +255,10 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
       const resp = await fetch(`${API_BASE_URL}/api/servers`, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
       })
+      if (resp.status === 401) {
+        onLogout()
+        return
+      }
       if (resp.ok) {
         const data = await resp.json()
         setServers(data)
@@ -275,6 +279,10 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
       const resp = await fetch(`${API_BASE_URL}/api/servers/${currentServerId}/channels`, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
       })
+      if (resp.status === 401) {
+        onLogout()
+        return
+      }
       if (resp.ok) {
         const data = await resp.json()
         if (Array.isArray(data)) {
@@ -380,8 +388,13 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
 
   return (
     <div className="chat-container">
+      {/* Mobile sidebar overlay */}
+      {showSidebar && (
+        <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />
+      )}
+
       {/* 1. Server Dock (Far Left) */}
-      <div className="server-dock">
+      <div className={`server-dock ${showSidebar ? 'sidebar-open' : ''}`}>
         {servers.map(server => {
           const sid = safeId(server.id);
           return (
