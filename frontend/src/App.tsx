@@ -73,8 +73,8 @@ function App() {
           addLog('success', 'Registration successful! You can now login.')
           setIsLogin(true)
         } else {
-          const text = await resp.text()
-          addLog('error', `Registration failed: ${text}`)
+          const data = await resp.json()
+          addLog('error', `Registration failed: ${data.error || 'Unknown error'}`)
         }
       }
     } catch (error: any) {
@@ -87,6 +87,13 @@ function App() {
     setToken(null)
     addLog('info', 'Logged out successfully.')
   }
+
+  const passwordRequirements = [
+    { label: '8+ characters', test: password.length >= 8 },
+    { label: 'Uppercase letter', test: /[A-Z]/.test(password) },
+    { label: 'Number', test: /\d/.test(password) },
+    { label: 'Special character', test: /[@$!%*?&]/.test(password) },
+  ]
 
   if (token) {
     return (
@@ -141,6 +148,15 @@ function App() {
               placeholder="Enter your password"
               required 
             />
+            {!isLogin && (
+              <div className="password-checklist">
+                {passwordRequirements.map((req, i) => (
+                  <div key={i} className={`checklist-item ${req.test ? 'pass' : ''}`}>
+                    {req.test ? '✓' : '○'} {req.label}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <button type="submit" disabled={serverStatus !== 'online'}>

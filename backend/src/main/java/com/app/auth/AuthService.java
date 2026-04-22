@@ -31,6 +31,8 @@ public class AuthService {
     private JwtUtils jwtUtils;
 
     public AuthResponse register(RegisterRequest registerRequest) {
+        validateRegistration(registerRequest);
+
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
             throw new RuntimeException("Username is already taken!");
         }
@@ -47,12 +49,40 @@ public class AuthService {
 
         userRepository.save(user);
         
-        // Auto-login after registration or just return success?
-        // Let's perform login to return a token.
         return login(new LoginRequest() {{
             setUsername(registerRequest.getUsername());
             setPassword(registerRequest.getPassword());
         }});
+    }
+
+    private void validateRegistration(RegisterRequest request) {
+        if (request.getUsername() == null || request.getUsername().length() < 3) {
+            throw new RuntimeException("Username must be at least 3 characters long.");
+        }
+        if (!request.getUsername().matches("^[a-zA-Z0-9_]+$")) {
+            throw new RuntimeException("Username can only contain letters, numbers, and underscores.");
+        }
+
+        if (request.getEmail() == null || !request.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            throw new RuntimeException("Please provide a valid email address.");
+        }
+
+        String password = request.getPassword();
+        if (password == null || password.length() < 8) {
+            throw new RuntimeException("Password must be at least 8 characters long.");
+        }
+        if (!password.matches(".*[A-Z].*")) {
+            throw new RuntimeException("Password must contain at least one uppercase letter.");
+        }
+        if (!password.matches(".*[a-z].*")) {
+            throw new RuntimeException("Password must contain at least one lowercase letter.");
+        }
+        if (!password.matches(".*\\d.*")) {
+            throw new RuntimeException("Password must contain at least one number.");
+        }
+        if (!password.matches(".*[@$!%*?&].*")) {
+            throw new RuntimeException("Password must contain at least one special character (@$!%*?&).");
+        }
     }
 
     public AuthResponse login(LoginRequest loginRequest) {

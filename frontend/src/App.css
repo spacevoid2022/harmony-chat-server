@@ -107,8 +107,31 @@ input {
 input:focus {
   outline: none;
   border-color: #646cff;
-  background: rgba(0, 0, 0, 0.3);
-  box-shadow: 0 0 0 4px rgba(100, 108, 255, 0.1);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.2);
+}
+
+.password-checklist {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  font-size: 0.75rem;
+}
+
+.checklist-item {
+  color: #8899af;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
+.checklist-item.pass {
+  color: #4ade80;
 }
 
 button {
