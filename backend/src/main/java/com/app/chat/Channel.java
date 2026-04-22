@@ -14,6 +14,7 @@ public class Channel {
     @Column(nullable = false)
     private String name;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne
     @JoinColumn(name = "server_id")
     private Server server;
