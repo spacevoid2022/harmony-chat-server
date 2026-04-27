@@ -530,15 +530,27 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
             {currentServerObj?.name || 'Channels'}
           </h3>
           {currentServerId && (
-            <button 
-              className="btn-settings" 
+            <button
+              className="btn-settings"
               onClick={() => {
                 setEditServerName(currentServerObj?.name || '')
                 setEditServerIconUrl(currentServerObj?.iconUrl || '')
                 setIsSettingsModalOpen(true)
               }}
               title="Server Settings"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: '#8899af', flexShrink: 0 }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '1.1rem',
+                color: '#8899af',
+                flexShrink: 0,
+                padding: '2px',
+                lineHeight: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
             >
               ⚙️
             </button>
