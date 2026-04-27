@@ -47,6 +47,11 @@ const useChat = (channelId, onNotification) => {
     fetchHistory();
   }, [channelId]);
 
+  const onNotificationRef = useRef(onNotification);
+  useEffect(() => {
+    onNotificationRef.current = onNotification;
+  }, [onNotification]);
+
   const onConnect = useCallback(() => {
     setIsConnected(true);
     console.log('Connected to WebSocket');
@@ -60,11 +65,11 @@ const useChat = (channelId, onNotification) => {
     clientRef.current.subscribe('/topic/notifications', (message) => {
       const notification = JSON.parse(message.body);
       console.log('Notification received:', notification);
-      if (onNotification) {
-        onNotification(notification);
+      if (onNotificationRef.current) {
+        onNotificationRef.current(notification);
       }
     });
-  }, [onNotification]);
+  }, []);
 
   const onDisconnect = useCallback(() => {
     setIsConnected(false);
