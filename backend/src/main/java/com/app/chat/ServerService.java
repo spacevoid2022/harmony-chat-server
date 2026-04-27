@@ -27,6 +27,12 @@ public class ServerService {
     private UserRepository userRepository;
 
     @Autowired
+    private ChatService chatService;
+
+    @Autowired
+    private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @PostConstruct
@@ -111,6 +117,24 @@ public class ServerService {
 
         if (!serverMemberRepository.existsByServerAndUser(server, user)) {
             serverMemberRepository.save(new ServerMember(server, user, "MEMBER"));
+            sendJoinMessage(server, user);
+        }
+    }
+
+    private void sendJoinMessage(Server server, User user) {
+        if (server.getChannels() != null && !server.getChannels().isEmpty()) {
+            Channel channel = server.getChannels().get(0);
+            String messageContent = "➔ " + user.getUsername() + " just slid into the server!";
+            Message savedMessage = chatService.saveMessage(channel.getId(), user.getUsername(), messageContent, null);
+
+            com.app.websocket.ChatMessage chatMessage = new com.app.websocket.ChatMessage();
+            chatMessage.setChannelId(channel.getId().toString());
+            chatMessage.setSenderId(user.getUsername());
+            chatMessage.setContent(messageContent);
+            chatMessage.setId(savedMessage.getId().toString());
+            chatMessage.setTimestamp(savedMessage.getTimestamp().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+
+            messagingTemplate.convertAndSend("/topic/channel/" + channel.getId(), chatMessage);
         }
     }
 
@@ -123,6 +147,7 @@ public class ServerService {
 
         if (!serverMemberRepository.existsByServerAndUser(server, user)) {
             serverMemberRepository.save(new ServerMember(server, user, "MEMBER"));
+            sendJoinMessage(server, user);
         }
         return server;
     }

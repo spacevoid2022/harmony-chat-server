@@ -605,6 +605,17 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
             const sender = m.senderId || 'Unknown';
             const currentUsername = getUsername();
             const isOwn = sender.toLowerCase() === (currentUsername || '').toLowerCase();
+            const isSystem = m.content?.startsWith('➔');
+
+            if (isSystem) {
+              return (
+                <div key={i} className="system-message">
+                  <span className="system-message-icon">➔</span>
+                  {m.content.substring(1)}
+                </div>
+              );
+            }
+
             return (
               <div key={i} className={`message-item ${isOwn ? 'own' : ''}`}>
                 <span className="message-sender">{sender}</span>
