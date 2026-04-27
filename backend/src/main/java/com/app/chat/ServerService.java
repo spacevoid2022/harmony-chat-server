@@ -49,6 +49,19 @@ public class ServerService {
         }
 
         createDefaultUcmServer();
+
+        // Migrate missing invite codes for pre-existing servers
+        List<Server> allServers = serverRepository.findAll();
+        for (Server server : allServers) {
+            if (server.getInviteCode() == null) {
+                if ("UCM".equals(server.getName())) {
+                    server.setInviteCode("UCM-HUB");
+                } else {
+                    server.setInviteCode(UUID.randomUUID().toString().substring(0, 8));
+                }
+                serverRepository.save(server);
+            }
+        }
     }
 
     @Transactional

@@ -219,6 +219,44 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isUploadingIcon, setIsUploadingIcon] = useState(false);
+  const iconInputRef = useRef<HTMLInputElement>(null);
+
+  const handleIconUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      addLog('error', 'File too large (Max 10MB)');
+      return;
+    }
+
+    setIsUploadingIcon(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (resp.ok) {
+        const imageUrl = await resp.text();
+        setEditServerIconUrl(imageUrl);
+        addLog('success', 'Server icon uploaded successfully!');
+      } else {
+        const error = await resp.text();
+        addLog('error', `Icon upload failed: ${error}`);
+      }
+    } catch (err) {
+      addLog('error', 'Network error during icon upload');
+    } finally {
+      setIsUploadingIcon(false);
+      if (iconInputRef.current) iconInputRef.current.value = '';
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !currentChannelId) return;
@@ -488,7 +526,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
       {/* 2. Channel Sidebar (Middle) */}
       <div className={`sidebar ${showSidebar ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <h3 style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, paddingRight: '10px' }}>
             {currentServerObj?.name || 'Channels'}
           </h3>
           {currentServerId && (
@@ -500,7 +538,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
                 setIsSettingsModalOpen(true)
               }}
               title="Server Settings"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: '#8899af' }}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: '#8899af', flexShrink: 0 }}
             >
               ⚙️
             </button>
@@ -651,6 +689,10 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
                   <label>Icon URL</label>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <input type="text" value={editServerIconUrl} onChange={(e) => setEditServerIconUrl(e.target.value)} placeholder="https://..." style={{ flex: 1 }} />
+                    <button type="button" onClick={() => iconInputRef.current?.click()} disabled={isUploadingIcon} style={{ background: '#333', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}>
+                      {isUploadingIcon ? '⌛' : 'Upload'}
+                    </button>
+                    <input type="file" ref={iconInputRef} onChange={handleIconUpload} accept="image/*" style={{ display: 'none' }} />
                   </div>
                   <small style={{ color: '#8899af', marginTop: '5px', display: 'block' }}>You can also upload an image in chat, then copy its link here.</small>
                 </div>
