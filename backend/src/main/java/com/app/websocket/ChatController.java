@@ -70,4 +70,21 @@ public class ChatController {
             System.out.println("DEBUG: Deletion FAILED for messageId: " + chatMessage.getId() + " (Wrong user or non-existent)");
         }
     }
+
+    @MessageMapping("/chat.toggleReaction")
+    public void toggleReaction(ChatMessage chatMessage) {
+        Message updatedMessage = chatService.toggleReaction(
+                Long.parseLong(chatMessage.getId()),
+                chatMessage.getSenderId(),
+                chatMessage.getEmoji()
+        );
+
+        chatMessage.setType("REACTION");
+        chatMessage.setReactions(updatedMessage.getReactions());
+        
+        messagingTemplate.convertAndSend(
+                "/topic/channel/" + chatMessage.getChannelId(),
+                chatMessage
+        );
+    }
 }

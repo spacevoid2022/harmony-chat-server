@@ -316,7 +316,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
     }
   };
 
-  const { messages, sendMessage, deleteMessage, isConnected } = useChat(currentChannelId, handleNotification)
+  const { messages, sendMessage, deleteMessage, toggleReaction, isConnected } = useChat(currentChannelId, handleNotification)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const fetchServers = async () => {
@@ -685,6 +685,11 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
             const isOwn = sender.toLowerCase() === (currentUsername || '').toLowerCase();
             const isSystem = m.content?.startsWith('➔');
             const isMentioned = m.content?.includes(`@${currentUsername}`);
+            const reactions = m.reactions || [];
+            const groupedReactions = reactions.reduce((acc: any, r: any) => {
+              acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+              return acc;
+            }, {});
 
             if (isSystem) {
               return (
@@ -699,6 +704,11 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
               <div key={i} className={`message-item ${isOwn ? 'own' : ''}`}>
                 <span className="message-sender">{sender}</span>
                 <div className={`message-bubble ${isMentioned ? 'mentioned' : ''}`}>
+                  <div className="reaction-tray">
+                    {['👍', '😂', '👎', '😢', '❤️'].map(emoji => (
+                      <button key={emoji} onClick={() => toggleReaction(m.id, emoji)}>{emoji}</button>
+                    ))}
+                  </div>
                   {(isOwn || isOwner) && (
                     <button 
                       className="btn-delete-message" 
@@ -724,6 +734,19 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
                   {m.imageUrl && (
                     <div className="chat-image-container">
                       <img src={`${API_BASE_URL}${m.imageUrl}`} alt="Upload" className="chat-upload-image" />
+                    </div>
+                  )}
+                  {Object.keys(groupedReactions).length > 0 && (
+                    <div className="reactions-display">
+                      {Object.entries(groupedReactions).map(([emoji, count]: any) => (
+                        <div 
+                          key={emoji} 
+                          className={`reaction-badge ${reactions.some((r: any) => r.emoji === emoji && r.username === currentUsername) ? 'active' : ''}`}
+                          onClick={() => toggleReaction(m.id, emoji)}
+                        >
+                          {emoji} <span>{count}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

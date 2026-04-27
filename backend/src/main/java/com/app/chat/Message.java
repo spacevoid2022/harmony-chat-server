@@ -41,6 +41,9 @@ public class Message {
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Reaction> reactions = new java.util.ArrayList<>();
+
     public Message() {}
 
     public Message(Channel channel, User sender, String content) {
@@ -68,4 +71,6 @@ public class Message {
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+    public java.util.List<Reaction> getReactions() { return reactions; }
+    public void setReactions(java.util.List<Reaction> reactions) { this.reactions = reactions; }
 }

@@ -21,6 +21,29 @@ public class ChatService {
     @Autowired
     private ServerRepository serverRepository;
 
+    @Autowired
+    private ReactionRepository reactionRepository;
+
+    @Transactional
+    public Message toggleReaction(Long messageId, String username, String emoji) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        java.util.Optional<Reaction> existing = reactionRepository.findByMessageAndUserAndEmoji(message, user, emoji);
+        if (existing.isPresent()) {
+            Reaction r = existing.get();
+            message.getReactions().remove(r);
+            reactionRepository.delete(r);
+        } else {
+            Reaction reaction = new Reaction(message, user, emoji);
+            reactionRepository.save(reaction);
+            message.getReactions().add(reaction);
+        }
+        return messageRepository.saveAndFlush(message);
+    }
+
     @Transactional
     public Message saveMessage(Long channelId, String username, String content, String imageUrl) {
         Channel channel = channelRepository.findById(channelId)

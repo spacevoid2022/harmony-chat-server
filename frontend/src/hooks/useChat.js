@@ -114,6 +114,16 @@ const useChat = (channelId, onNotification) => {
             return;
           }
 
+          if (received.type === 'REACTION') {
+            setMessages((prev) => prev.map(m => {
+              if (m.id?.toString() === received.id?.toString()) {
+                return { ...m, reactions: received.reactions };
+              }
+              return m;
+            }));
+            return;
+          }
+
           setMessages((prev) => {
             // deduplicate by id or content+timestamp
             const exists = prev.some(m => (m.id && received.id && m.id.toString() === received.id.toString()) || 
@@ -194,7 +204,24 @@ const useChat = (channelId, onNotification) => {
     }
   }, [channelId, isConnected]);
 
-  return { messages, sendMessage, deleteMessage, isConnected };
+  const toggleReaction = useCallback((messageId, emoji) => {
+    if (clientRef.current && isConnected && channelId) {
+      const payload = {
+        id: messageId.toString(),
+        channelId: channelId,
+        senderId: getUsername(),
+        emoji: emoji,
+        type: 'REACTION'
+      };
+      
+      clientRef.current.publish({
+        destination: '/app/chat.toggleReaction',
+        body: JSON.stringify(payload)
+      });
+    }
+  }, [channelId, isConnected]);
+
+  return { messages, sendMessage, deleteMessage, toggleReaction, isConnected };
 };
 
 export default useChat;

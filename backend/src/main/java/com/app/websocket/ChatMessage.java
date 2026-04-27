@@ -7,7 +7,9 @@ public class ChatMessage {
     private String content;
     private String imageUrl;
     private String timestamp;
-    private String type = "CHAT"; // CHAT or DELETE
+    private String type = "CHAT"; // CHAT, DELETE, or REACTION
+    private String emoji;
+    private java.util.List<com.app.chat.Reaction> reactions;
 
     public ChatMessage() {}
 
@@ -34,4 +36,8 @@ public class ChatMessage {
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
+    public String getEmoji() { return emoji; }
+    public void setEmoji(String emoji) { this.emoji = emoji; }
+    public java.util.List<com.app.chat.Reaction> getReactions() { return reactions; }
+    public void setReactions(java.util.List<com.app.chat.Reaction> reactions) { this.reactions = reactions; }
 }

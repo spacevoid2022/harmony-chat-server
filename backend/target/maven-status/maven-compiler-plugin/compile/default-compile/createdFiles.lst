@@ -5,8 +5,10 @@ com\app\websocket\ChatController.class
 com\app\chat\ServerRepository.class
 com\app\auth\dto\RegisterRequest.class
 com\app\notifications\NotificationService$NotificationMessage.class
+com\app\chat\ReactionRepository.class
 com\app\HarmonyChatServerApplication.class
 com\app\config\GlobalExceptionHandler.class
+com\app\chat\Reaction.class
 com\app\auth\dto\LoginRequest.class
 com\app\chat\MessageRepository.class
 com\app\chat\Server.class
