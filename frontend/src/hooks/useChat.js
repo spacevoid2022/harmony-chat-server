@@ -3,7 +3,7 @@ import { API_BASE_URL } from '../config';
 import { getUsername } from '../services/auth';
 import { createWebsocketClient } from '../services/websocket';
 
-const useChat = (channelId) => {
+const useChat = (channelId, onNotification) => {
   const [messages, setMessages] = useState([]);
   
   // Initial load from cache
@@ -60,8 +60,11 @@ const useChat = (channelId) => {
     clientRef.current.subscribe('/topic/notifications', (message) => {
       const notification = JSON.parse(message.body);
       console.log('Notification received:', notification);
+      if (onNotification) {
+        onNotification(notification);
+      }
     });
-  }, []);
+  }, [onNotification]);
 
   const onDisconnect = useCallback(() => {
     setIsConnected(false);

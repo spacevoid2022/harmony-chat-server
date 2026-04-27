@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import './App.css'
 // @ts-ignore
 import { login, logout, getToken, getUsername, getUserId } from './services/auth'
@@ -220,6 +220,22 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
   const [showMentions, setShowMentions] = useState(false)
   const [mentionIndex, setMentionIndex] = useState(0)
   
+  // Notification State
+  const [unreadPings, setUnreadPings] = useState<Record<string, number>>({})
+
+  const handleNotification = useCallback((notif: any) => {
+    const currentUsername = getUsername();
+    if (notif.content?.includes(`@${currentUsername}`)) {
+      // Show badge if not in the specific channel where the ping happened
+      if (notif.channelId !== currentChannelId) {
+        setUnreadPings(prev => ({
+          ...prev,
+          [notif.serverId]: (prev[notif.serverId] || 0) + 1
+        }));
+      }
+    }
+  }, [currentChannelId]);
+  
   const safeId = (id: any) => (id !== null && id !== undefined ? id.toString() : '');
 
   const [isUploading, setIsUploading] = useState(false);
@@ -300,7 +316,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
     }
   };
 
-  const { messages, sendMessage, deleteMessage, isConnected } = useChat(currentChannelId)
+  const { messages, sendMessage, deleteMessage, isConnected } = useChat(currentChannelId, handleNotification)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const fetchServers = async () => {
@@ -399,6 +415,8 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
     if (currentServerId) {
       fetchChannels()
       fetchServerMembers()
+      // Clear pings for this server when we enter it
+      setUnreadPings(prev => ({ ...prev, [currentServerId]: 0 }));
     }
   }, [currentServerId])
 
@@ -553,6 +571,9 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
               title={server.name}
             >
               <div className="server-indicator" />
+              {unreadPings[sid] > 0 && (
+                <div className="ping-badge">{unreadPings[sid]}</div>
+              )}
               {server.iconUrl ? (
                 <img src={server.iconUrl.startsWith('/') ? `${API_BASE_URL}${server.iconUrl}` : server.iconUrl} alt={server.name} />
               ) : (

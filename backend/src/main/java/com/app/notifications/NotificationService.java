@@ -15,28 +15,31 @@ public class NotificationService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    public void notifyNewMessage(String channelId, String senderId, String snippet) {
-        NotificationMessage message = new NotificationMessage(channelId, senderId, snippet);
+    public void notifyNewMessage(String serverId, String channelId, String senderId, String content) {
+        NotificationMessage message = new NotificationMessage(serverId, channelId, senderId, content);
         messagingTemplate.convertAndSend(NOTIFICATION_TOPIC, message);
-        logger.info("New message notification sent for channel {} from user {}", channelId, senderId);
+        logger.info("New message notification sent for server {} channel {} from user {}", serverId, channelId, senderId);
     }
 
     public static class NotificationMessage {
         private String type = "new_message";
+        private String serverId;
         private String channelId;
         private String senderId;
-        private String snippet;
+        private String content;
 
-        public NotificationMessage(String channelId, String senderId, String snippet) {
+        public NotificationMessage(String serverId, String channelId, String senderId, String content) {
+            this.serverId = serverId;
             this.channelId = channelId;
             this.senderId = senderId;
-            this.snippet = snippet != null && snippet.length() > 50 ? snippet.substring(0, 50) + "..." : snippet;
+            this.content = content;
         }
 
         // Getters
         public String getType() { return type; }
+        public String getServerId() { return serverId; }
         public String getChannelId() { return channelId; }
         public String getSenderId() { return senderId; }
-        public String getSnippet() { return snippet; }
+        public String getContent() { return content; }
     }
 }

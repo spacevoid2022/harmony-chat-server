@@ -233,18 +233,38 @@ button:active {
 .server-icon {
   width: 48px;
   height: 48px;
-  background: #2b2d31;
   border-radius: 50%;
+  background: #313338;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  overflow: hidden;
-  color: #dbdee1;
-  font-weight: 600;
   font-size: 1.1rem;
+  font-weight: bold;
+  color: #dbdee1;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  flex-shrink: 0;
+}
+
+.ping-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ff4444;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 1px 6px;
+  border-radius: 12px;
+  border: 3px solid #1e1f22;
+  min-width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 .server-icon:hover, .server-icon.active {

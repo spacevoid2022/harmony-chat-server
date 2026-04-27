@@ -42,6 +42,7 @@ public class ChatController {
 
         // Send a notification for the new message
         notificationService.notifyNewMessage(
+                savedMessage.getChannel().getServer().getId().toString(),
                 chatMessage.getChannelId(),
                 chatMessage.getSenderId(),
                 chatMessage.getContent()
