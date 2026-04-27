@@ -106,6 +106,9 @@ public class AuthService {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String jwt = jwtUtils.generateToken(userDetails);
 
-        return new AuthResponse(jwt);
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return new AuthResponse(jwt, user.getId());
     }
 }

@@ -18,6 +18,9 @@ public class Server {
 
     private Long ownerId;
 
+    @Column(unique = true)
+    private String inviteCode;
+
     @OneToMany(mappedBy = "server", cascade = CascadeType.ALL)
     private List<Channel> channels;
 
@@ -38,4 +41,6 @@ public class Server {
     public void setOwnerId(Long ownerId) { this.ownerId = ownerId; }
     public List<Channel> getChannels() { return channels; }
     public void setChannels(List<Channel> channels) { this.channels = channels; }
+    public String getInviteCode() { return inviteCode; }
+    public void setInviteCode(String inviteCode) { this.inviteCode = inviteCode; }
 }

@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 public class ServerService {
@@ -55,6 +56,7 @@ public class ServerService {
         if (serverRepository.findByName("UCM").isEmpty()) {
             Server ucm = new Server("UCM", 1L); // Default owner ID 1
             ucm.setIconUrl("/ucm-default-icon.png");
+            ucm.setInviteCode("UCM-HUB");
             serverRepository.save(ucm);
 
             // Move all existing channels that don't have a server to UCM
@@ -73,6 +75,7 @@ public class ServerService {
     public Server createServer(String name, Long ownerId, String iconUrl) {
         Server server = new Server(name, ownerId);
         server.setIconUrl(iconUrl);
+        server.setInviteCode(UUID.randomUUID().toString().substring(0, 8));
         Server savedServer = serverRepository.save(server);
 
         // Add owner as a member
@@ -96,6 +99,38 @@ public class ServerService {
         if (!serverMemberRepository.existsByServerAndUser(server, user)) {
             serverMemberRepository.save(new ServerMember(server, user, "MEMBER"));
         }
+    }
+
+    @Transactional
+    public Server joinServerByInvite(String inviteCode, Long userId) {
+        Server server = serverRepository.findByInviteCode(inviteCode)
+                .orElseThrow(() -> new RuntimeException("Invalid invite code"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!serverMemberRepository.existsByServerAndUser(server, user)) {
+            serverMemberRepository.save(new ServerMember(server, user, "MEMBER"));
+        }
+        return server;
+    }
+
+    @Transactional
+    public Server updateServer(Long serverId, String name, String iconUrl, Long userId) {
+        Server server = serverRepository.findById(serverId)
+                .orElseThrow(() -> new RuntimeException("Server not found"));
+        
+        if (!server.getOwnerId().equals(userId)) {
+            throw new RuntimeException("Only the server owner can update settings");
+        }
+
+        if (name != null && !name.trim().isEmpty()) {
+            server.setName(name.trim());
+        }
+        if (iconUrl != null) {
+            server.setIconUrl(iconUrl);
+        }
+        
+        return serverRepository.save(server);
     }
 
     public List<Server> getServersForUser(String username) {

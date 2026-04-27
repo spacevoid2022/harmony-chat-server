@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 // @ts-ignore
-import { login, logout, getToken, getUsername } from './services/auth'
+import { login, logout, getToken, getUsername, getUserId } from './services/auth'
 // @ts-ignore
 import useChat from './hooks/useChat'
 import GifPicker from './components/GifPicker'
@@ -199,6 +199,15 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
   
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isServerModalOpen, setIsServerModalOpen] = useState(false)
+  
+  // Settings & Invites State
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
+  const [settingsTab, setSettingsTab] = useState<'overview' | 'invites'>('overview')
+  const [editServerName, setEditServerName] = useState('')
+  const [editServerIconUrl, setEditServerIconUrl] = useState('')
+  const [serverTab, setServerTab] = useState<'create' | 'join'>('create')
+  const [joinInviteCode, setJoinInviteCode] = useState('')
+
   const [newServerName, setNewServerName] = useState('')
   const [newChannelName, setNewChannelName] = useState('')
   const [inputText, setInputText] = useState('')
@@ -354,6 +363,58 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
     }
   }
 
+  const handleJoinServer = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!joinInviteCode.trim()) return
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/servers/join/${joinInviteCode}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      })
+      if (resp.ok) {
+        const server = await resp.json()
+        setServers(prev => {
+          if (!prev.find(s => s.id === server.id)) return [...prev, server]
+          return prev
+        })
+        setCurrentServerId(safeId(server.id))
+        localStorage.setItem('last_server_id', safeId(server.id))
+        setIsServerModalOpen(false)
+        setJoinInviteCode('')
+        addLog('success', `Joined server ${server.name}!`)
+      } else {
+        addLog('error', 'Invalid or expired invite code.')
+      }
+    } catch (err) {
+      console.error('Failed to join server:', err)
+    }
+  }
+
+  const handleUpdateServer = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!currentServerId) return
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/servers/${currentServerId}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify({ name: editServerName, iconUrl: editServerIconUrl })
+      })
+      if (resp.ok) {
+        const updated = await resp.json()
+        setServers(prev => prev.map(s => safeId(s.id) === currentServerId ? updated : s))
+        setIsSettingsModalOpen(false)
+        addLog('success', 'Server settings updated!')
+      } else {
+        addLog('error', 'Failed to update server settings.')
+      }
+    } catch (err) {
+      console.error('Failed to update server:', err)
+    }
+  }
+
   const handleCreateChannel = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newChannelName.trim() || !currentServerId) return
@@ -385,6 +446,9 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
   }
 
   const currentChannelName = channels.find(c => safeId(c.id) === currentChannelId)?.name || 'General'
+
+  const currentServerObj = servers.find(s => safeId(s.id) === currentServerId)
+  const isOwner = currentServerObj?.ownerId?.toString() === getUserId()
 
   return (
     <div className="chat-container">
@@ -423,8 +487,27 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
 
       {/* 2. Channel Sidebar (Middle) */}
       <div className={`sidebar ${showSidebar ? 'sidebar-open' : ''}`}>
-        <div className="sidebar-header">
-          <h3>Channels</h3>
+        <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {currentServerObj?.name || 'Channels'}
+          </h3>
+          {currentServerId && (
+            <button 
+              className="btn-settings" 
+              onClick={() => {
+                setEditServerName(currentServerObj?.name || '')
+                setEditServerIconUrl(currentServerObj?.iconUrl || '')
+                setIsSettingsModalOpen(true)
+              }}
+              title="Server Settings"
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: '#8899af' }}
+            >
+              ⚙️
+            </button>
+          )}
+        </div>
+        <div className="sidebar-header" style={{ paddingTop: 0, paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <span style={{ fontSize: '0.8rem', color: '#8899af', textTransform: 'uppercase', letterSpacing: '1px' }}>Channels</span>
           <button className="btn-add-channel" onClick={() => setIsModalOpen(true)}>+</button>
         </div>
         <div className="channel-list">
@@ -533,20 +616,116 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
       </div>
 
       {/* Modals */}
+      {isSettingsModalOpen && currentServerObj && (
+        <div className="modal-overlay">
+          <div className="modal-card" style={{ maxWidth: '500px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>Server Settings</h3>
+              <button onClick={() => setIsSettingsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#8899af', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              {isOwner && (
+                <button 
+                  style={{ background: 'transparent', border: 'none', padding: '10px', borderBottom: settingsTab === 'overview' ? '2px solid #646cff' : 'none', color: settingsTab === 'overview' ? '#fff' : '#8899af', cursor: 'pointer' }}
+                  onClick={() => setSettingsTab('overview')}
+                >
+                  Overview
+                </button>
+              )}
+              <button 
+                style={{ background: 'transparent', border: 'none', padding: '10px', borderBottom: settingsTab === 'invites' ? '2px solid #646cff' : 'none', color: settingsTab === 'invites' ? '#fff' : '#8899af', cursor: 'pointer' }}
+                onClick={() => setSettingsTab('invites')}
+              >
+                Invites
+              </button>
+            </div>
+
+            {settingsTab === 'overview' && isOwner && (
+              <form onSubmit={handleUpdateServer}>
+                <div className="form-group">
+                  <label>Server Name</label>
+                  <input type="text" value={editServerName} onChange={(e) => setEditServerName(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label>Icon URL</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <input type="text" value={editServerIconUrl} onChange={(e) => setEditServerIconUrl(e.target.value)} placeholder="https://..." style={{ flex: 1 }} />
+                  </div>
+                  <small style={{ color: '#8899af', marginTop: '5px', display: 'block' }}>You can also upload an image in chat, then copy its link here.</small>
+                </div>
+                <div className="modal-footer" style={{ marginTop: '20px' }}>
+                  <button type="submit">Save Changes</button>
+                </div>
+              </form>
+            )}
+
+            {settingsTab === 'invites' && (
+              <div>
+                <p style={{ color: '#8899af', marginBottom: '10px' }}>Share this code with others so they can join your server.</p>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
+                  <code style={{ flex: 1, fontSize: '1.2rem', textAlign: 'center', letterSpacing: '2px' }}>
+                    {currentServerObj.inviteCode || 'No code generated'}
+                  </code>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(currentServerObj.inviteCode || '')
+                      addLog('success', 'Invite code copied to clipboard!')
+                    }}
+                    style={{ padding: '8px 12px', background: '#646cff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {isServerModalOpen && (
         <div className="modal-overlay">
           <div className="modal-card">
-            <h3>Create Server</h3>
-            <form onSubmit={(e) => handleCreateServer(e)}>
-              <div className="form-group">
-                <label>Server Name</label>
-                <input type="text" value={newServerName} onChange={(e) => setNewServerName(e.target.value)} placeholder="e.g. My Cool Server" autoFocus />
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn-cancel" onClick={() => setIsServerModalOpen(false)}>Cancel</button>
-                <button type="submit">Create</button>
-              </div>
-            </form>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <button 
+                type="button"
+                style={{ background: 'transparent', border: 'none', padding: '10px', borderBottom: serverTab === 'create' ? '2px solid #646cff' : 'none', color: serverTab === 'create' ? '#fff' : '#8899af', cursor: 'pointer', flex: 1 }}
+                onClick={() => setServerTab('create')}
+              >
+                Create Server
+              </button>
+              <button 
+                type="button"
+                style={{ background: 'transparent', border: 'none', padding: '10px', borderBottom: serverTab === 'join' ? '2px solid #646cff' : 'none', color: serverTab === 'join' ? '#fff' : '#8899af', cursor: 'pointer', flex: 1 }}
+                onClick={() => setServerTab('join')}
+              >
+                Join Server
+              </button>
+            </div>
+
+            {serverTab === 'create' ? (
+              <form onSubmit={(e) => handleCreateServer(e)}>
+                <div className="form-group">
+                  <label>Server Name</label>
+                  <input type="text" value={newServerName} onChange={(e) => setNewServerName(e.target.value)} placeholder="e.g. My Cool Server" autoFocus />
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn-cancel" onClick={() => setIsServerModalOpen(false)}>Cancel</button>
+                  <button type="submit">Create</button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={(e) => handleJoinServer(e)}>
+                <div className="form-group">
+                  <label>Invite Code</label>
+                  <input type="text" value={joinInviteCode} onChange={(e) => setJoinInviteCode(e.target.value)} placeholder="e.g. 8a3f2b9c" autoFocus />
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn-cancel" onClick={() => setIsServerModalOpen(false)}>Cancel</button>
+                  <button type="submit">Join</button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

@@ -38,11 +38,25 @@ public class ServerController {
         return ResponseEntity.ok(serverService.getChannelsForServer(serverId));
     }
 
-    @PostMapping("/{serverId}/join")
-    public ResponseEntity<String> joinServer(@PathVariable Long serverId, @AuthenticationPrincipal UserDetails userDetails) {
+    @PostMapping("/join/{inviteCode}")
+    public ResponseEntity<Server> joinServerByInvite(@PathVariable String inviteCode, @AuthenticationPrincipal UserDetails userDetails) {
         User user = userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        serverService.joinServer(serverId, user.getId());
-        return ResponseEntity.ok("Joined successfully");
+        return ResponseEntity.ok(serverService.joinServerByInvite(inviteCode, user.getId()));
+    }
+
+    @PutMapping("/{serverId}")
+    public ResponseEntity<Server> updateServer(
+            @PathVariable Long serverId, 
+            @RequestBody Server serverDetails, 
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return ResponseEntity.ok(serverService.updateServer(
+                serverId, 
+                serverDetails.getName(), 
+                serverDetails.getIconUrl(), 
+                user.getId()
+        ));
     }
 }
