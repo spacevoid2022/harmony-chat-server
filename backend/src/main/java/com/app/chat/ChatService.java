@@ -37,14 +37,34 @@ public class ChatService {
     }
     @Transactional
     public boolean deleteMessage(Long messageId, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         return messageRepository.findById(messageId)
                 .map(message -> {
-                    System.out.println("DEBUG: Universal deletion triggered for messageId: " + messageId + " by " + username);
-                    messageRepository.delete(message);
-                    return true;
-                }).orElseGet(() -> {
-                    System.out.println("DEBUG: Message with ID " + messageId + " not found in DB.");
+                    boolean isSender = message.getSender().getUsername().equals(username);
+                    boolean isServerOwner = message.getChannel().getServer().getOwnerId().equals(user.getId());
+
+                    if (isSender || isServerOwner) {
+                        messageRepository.delete(message);
+                        return true;
+                    }
                     return false;
-                });
+                }).orElse(false);
+    }
+
+    @Transactional
+    public void deleteChannel(Long channelId, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        Channel channel = channelRepository.findById(channelId)
+                .orElseThrow(() -> new RuntimeException("Channel not found"));
+        
+        if (!channel.getServer().getOwnerId().equals(user.getId())) {
+            throw new RuntimeException("Only the server owner can delete channels");
+        }
+        
+        channelRepository.delete(channel);
     }
 }

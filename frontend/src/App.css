@@ -370,6 +370,20 @@ button:active {
   color: #fff;
 }
 
+.btn-delete-channel {
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.channel-item:hover .btn-delete-channel {
+  opacity: 0.6;
+}
+
+.btn-delete-channel:hover {
+  opacity: 1 !important;
+  transform: scale(1.2);
+}
+
 .main-chat {
   flex: 1;
   display: flex;

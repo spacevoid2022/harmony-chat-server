@@ -1,5 +1,6 @@
 package com.app.chat;
 
+import com.app.auth.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +20,12 @@ public class ChannelController {
     @Autowired
     private ServerRepository serverRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ChatService chatService;
+
     @GetMapping
     public List<Channel> getAllChannels() {
         return channelRepository.findAll();
@@ -30,6 +37,11 @@ public class ChannelController {
                 .orElseThrow(() -> new RuntimeException("Server not found"));
         channel.setServer(server);
         return channelRepository.save(channel);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteChannel(@PathVariable Long id, @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
+        chatService.deleteChannel(id, userDetails.getUsername());
     }
 
     @GetMapping("/{id}/messages")

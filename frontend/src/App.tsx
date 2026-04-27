@@ -349,6 +349,27 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
     }
   }
 
+  const handleDeleteChannel = async (channelId: string) => {
+    if (!window.confirm('Are you sure you want to delete this channel? All messages will be lost.')) return;
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/channels/${channelId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${getToken()}`
+        }
+      });
+      if (resp.ok) {
+        addLog('success', 'Channel deleted');
+        fetchChannels();
+      } else {
+        const error = await resp.text();
+        addLog('error', `Failed to delete channel: ${error}`);
+      }
+    } catch (err) {
+      addLog('error', 'Network error deleting channel');
+    }
+  };
+
   useEffect(() => {
     fetchServers()
   }, [])
@@ -566,13 +587,27 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
               <div 
                 key={channel.id} 
                 className={`channel-item ${currentChannelId === cid ? 'active' : ''}`}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                 onClick={() => {
                   setCurrentChannelId(cid);
                   localStorage.setItem('last_channel_id', cid);
                   setShowSidebar(false);
                 }}
               >
-                # {channel.name}
+                <span>{channel.name}</span>
+                {isOwner && (
+                  <button 
+                    className="btn-delete-channel"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteChannel(cid);
+                    }}
+                    style={{ background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.8rem', padding: '0 5px' }}
+                    title="Delete Channel"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             );
           })}
@@ -620,17 +655,19 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
               <div key={i} className={`message-item ${isOwn ? 'own' : ''}`}>
                 <span className="message-sender">{sender}</span>
                 <div className="message-bubble">
-                  <button 
-                    className="btn-delete-message" 
-                    onClick={() => {
-                      if (m.id && window.confirm('Delete this message?')) {
-                        deleteMessage(m.id);
-                      }
-                    }}
-                    title="Delete message"
-                  >
-                    🗑️
-                  </button>
+                  {(isOwn || isOwner) && (
+                    <button 
+                      className="btn-delete-message" 
+                      onClick={() => {
+                        if (m.id && window.confirm('Delete this message?')) {
+                          deleteMessage(m.id);
+                        }
+                      }}
+                      title="Delete message"
+                    >
+                      🗑️
+                    </button>
+                  )}
                   {m.content ? (
                     isImageUrl(m.content) ? (
                       <img src={m.content} alt="GIF" className="chat-image" />
