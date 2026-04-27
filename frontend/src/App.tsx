@@ -547,9 +547,8 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
                 flexShrink: 0,
                 padding: '2px',
                 lineHeight: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                width: 'auto',
+                display: 'inline-flex'
               }}
             >
               ⚙️
