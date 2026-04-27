@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface ServerMemberRepository extends JpaRepository<ServerMember, Long> {
     List<ServerMember> findByUser(User user);
+    List<ServerMember> findByServer(Server server);
     boolean existsByServerAndUser(Server server, User user);
 }

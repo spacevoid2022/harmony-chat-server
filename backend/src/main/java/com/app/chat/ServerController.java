@@ -59,4 +59,8 @@ public class ServerController {
                 user.getId()
         ));
     }
+    @GetMapping("/{serverId}/members")
+    public ResponseEntity<List<User>> getServerMembers(@PathVariable Long serverId) {
+        return ResponseEntity.ok(serverService.getServerMembers(serverId));
+    }
 }

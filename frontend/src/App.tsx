@@ -214,6 +214,12 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
   const [showGifPicker, setShowGifPicker] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
   
+  // Mentions State
+  const [serverMembers, setServerMembers] = useState<any[]>([])
+  const [mentionSearch, setMentionSearch] = useState('')
+  const [showMentions, setShowMentions] = useState(false)
+  const [mentionIndex, setMentionIndex] = useState(0)
+  
   const safeId = (id: any) => (id !== null && id !== undefined ? id.toString() : '');
 
   const [isUploading, setIsUploading] = useState(false);
@@ -370,6 +376,21 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
     }
   };
 
+  const fetchServerMembers = async () => {
+    if (!currentServerId) return;
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/servers/${currentServerId}/members`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        setServerMembers(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch members:', err);
+    }
+  };
+
   useEffect(() => {
     fetchServers()
   }, [])
@@ -377,6 +398,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
   useEffect(() => {
     if (currentServerId) {
       fetchChannels()
+      fetchServerMembers()
     }
   }, [currentServerId])
 
@@ -641,6 +663,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
             const currentUsername = getUsername();
             const isOwn = sender.toLowerCase() === (currentUsername || '').toLowerCase();
             const isSystem = m.content?.startsWith('➔');
+            const isMentioned = m.content?.includes(`@${currentUsername}`);
 
             if (isSystem) {
               return (
@@ -654,7 +677,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
             return (
               <div key={i} className={`message-item ${isOwn ? 'own' : ''}`}>
                 <span className="message-sender">{sender}</span>
-                <div className="message-bubble">
+                <div className={`message-bubble ${isMentioned ? 'mentioned' : ''}`}>
                   {(isOwn || isOwner) && (
                     <button 
                       className="btn-delete-message" 
@@ -689,7 +712,29 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
           <div ref={messagesEndRef} />
         </div>
 
-        <form className="chat-input-area" onSubmit={handleSend}>
+        <form className="chat-input-area" onSubmit={handleSend} style={{ position: 'relative' }}>
+          {showMentions && (
+            <div className="mentions-dropdown">
+              {serverMembers
+                .filter(m => m.username.toLowerCase().includes(mentionSearch.toLowerCase()))
+                .slice(0, 8)
+                .map((member, i) => (
+                  <div 
+                    key={member.id} 
+                    className={`mention-item ${i === mentionIndex ? 'active' : ''}`}
+                    onClick={() => {
+                      const words = inputText.split(' ');
+                      words.pop();
+                      words.push(`@${member.username} `);
+                      setInputText(words.join(' '));
+                      setShowMentions(false);
+                    }}
+                  >
+                    @{member.username}
+                  </div>
+                ))}
+            </div>
+          )}
           <button 
             type="button" 
             className="btn-upload" 
@@ -700,7 +745,46 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
           </button>
           <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" style={{ display: 'none' }} />
           <button type="button" className="btn-gif" onClick={() => setShowGifPicker(true)}>GIF</button>
-          <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder={`Message #${currentChannelName}`} />
+          <input 
+            type="text" 
+            value={inputText} 
+            onChange={(e) => {
+              const val = e.target.value;
+              setInputText(val);
+              const lastWord = val.split(' ').pop();
+              if (lastWord && lastWord.startsWith('@')) {
+                setMentionSearch(lastWord.substring(1));
+                setShowMentions(true);
+                setMentionIndex(0);
+              } else {
+                setShowMentions(false);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (showMentions) {
+                const filtered = serverMembers.filter(m => m.username.toLowerCase().includes(mentionSearch.toLowerCase())).slice(0, 8);
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setMentionIndex(prev => (prev + 1) % filtered.length);
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setMentionIndex(prev => (prev - 1 + filtered.length) % filtered.length);
+                } else if (e.key === 'Enter') {
+                  if (filtered[mentionIndex]) {
+                    e.preventDefault();
+                    const words = inputText.split(' ');
+                    words.pop();
+                    words.push(`@${filtered[mentionIndex].username} `);
+                    setInputText(words.join(' '));
+                    setShowMentions(false);
+                  }
+                } else if (e.key === 'Escape') {
+                  setShowMentions(false);
+                }
+              }
+            }}
+            placeholder={`Message #${currentChannelName}`} 
+          />
           <button type="submit">Send</button>
         </form>
 

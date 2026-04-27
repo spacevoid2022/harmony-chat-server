@@ -192,4 +192,12 @@ public class ServerService {
                 .orElseThrow(() -> new RuntimeException("Server not found"));
         return server.getChannels();
     }
+
+    public List<User> getServerMembers(Long serverId) {
+        Server server = serverRepository.findById(serverId)
+                .orElseThrow(() -> new RuntimeException("Server not found"));
+        return serverMemberRepository.findByServer(server).stream()
+                .map(ServerMember::getUser)
+                .collect(Collectors.toList());
+    }
 }
