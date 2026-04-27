@@ -526,7 +526,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
       {/* 2. Channel Sidebar (Middle) */}
       <div className={`sidebar ${showSidebar ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, paddingRight: '10px' }}>
+          <h3 style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0, paddingRight: '10px' }}>
             {currentServerObj?.name || 'Channels'}
           </h3>
           {currentServerId && (
@@ -686,15 +686,15 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
                   <input type="text" value={editServerName} onChange={(e) => setEditServerName(e.target.value)} required />
                 </div>
                 <div className="form-group">
-                  <label>Icon URL</label>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <input type="text" value={editServerIconUrl} onChange={(e) => setEditServerIconUrl(e.target.value)} placeholder="https://..." style={{ flex: 1 }} />
-                    <button type="button" onClick={() => iconInputRef.current?.click()} disabled={isUploadingIcon} style={{ background: '#333', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}>
-                      {isUploadingIcon ? '⌛' : 'Upload'}
+                  <label>Server Icon</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <input type="text" value={editServerIconUrl} onChange={(e) => setEditServerIconUrl(e.target.value)} placeholder="https://..." />
+                    <button type="button" onClick={() => iconInputRef.current?.click()} disabled={isUploadingIcon} style={{ background: '#333', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '4px', cursor: 'pointer', padding: '10px', width: '100%' }}>
+                      {isUploadingIcon ? '⌛ Uploading...' : 'Upload Image File'}
                     </button>
                     <input type="file" ref={iconInputRef} onChange={handleIconUpload} accept="image/*" style={{ display: 'none' }} />
                   </div>
-                  <small style={{ color: '#8899af', marginTop: '5px', display: 'block' }}>You can also upload an image in chat, then copy its link here.</small>
+                  <small style={{ color: '#8899af', marginTop: '5px', display: 'block' }}>Paste an image URL above, or click upload to select a file.</small>
                 </div>
                 <div className="modal-footer" style={{ marginTop: '20px' }}>
                   <button type="submit">Save Changes</button>
