@@ -75,6 +75,17 @@ const useVoiceChat = (voiceChannelId) => {
       setParticipants(prev => prev.includes(targetId) ? prev : [...prev, targetId]);
     };
 
+    peer.onconnectionstatechange = () => {
+      if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed' || peer.connectionState === 'closed') {
+        setRemoteStreams(prev => {
+          const newStreams = { ...prev };
+          delete newStreams[targetId];
+          return newStreams;
+        });
+        setParticipants(prev => prev.filter(p => p !== targetId));
+      }
+    };
+
     peersRef.current[targetId] = peer;
     return peer;
   }, [voiceChannelId, username]);
@@ -93,7 +104,10 @@ const useVoiceChat = (voiceChannelId) => {
             if (signal.senderId === username) return; // ignore self
 
             if (signal.type === 'join') {
-              // A new user joined, send them an offer
+              // A new user joined, add them to participants
+              setParticipants(prev => prev.includes(signal.senderId) ? prev : [...prev, signal.senderId]);
+              
+              // Send them an offer
               const peer = createPeer(signal.senderId, true);
               const offer = await peer.createOffer();
               await peer.setLocalDescription(offer);
@@ -108,6 +122,7 @@ const useVoiceChat = (voiceChannelId) => {
                 })
               });
             } else if (signal.type === 'offer' && signal.targetId === username) {
+              setParticipants(prev => prev.includes(signal.senderId) ? prev : [...prev, signal.senderId]);
               const peer = createPeer(signal.senderId, false);
               await peer.setRemoteDescription(new RTCSessionDescription(signal.payload));
               const answer = await peer.createAnswer();
@@ -169,7 +184,20 @@ const useVoiceChat = (voiceChannelId) => {
   }, [cleanup]);
 
   useEffect(() => {
+    if (isConnected) {
+      setParticipants(prev => prev.includes(username) ? prev : [username, ...prev]);
+    } else {
+      setParticipants(prev => prev.filter(p => p !== username));
+    }
+  }, [isConnected, username]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      cleanup();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       cleanup();
     };
   }, [cleanup]);
