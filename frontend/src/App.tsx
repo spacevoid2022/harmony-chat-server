@@ -236,6 +236,15 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
     }
   }, [currentChannelId]);
   
+  // Voice Recording State
+  const [isRecording, setIsRecording] = useState(false);
+  const [, setAudioStream] = useState<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationFrameRef = useRef<number>(0);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+
   const safeId = (id: any) => (id !== null && id !== undefined ? id.toString() : '');
 
   const [isUploading, setIsUploading] = useState(false);
@@ -437,6 +446,108 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
     setShowGifPicker(false)
   }
 
+  const drawWaveform = () => {
+    if (!canvasRef.current || !analyserRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const analyser = analyserRef.current;
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const draw = () => {
+      animationFrameRef.current = requestAnimationFrame(draw);
+      analyser.getByteFrequencyData(dataArray);
+
+      ctx.fillStyle = '#313338';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const barWidth = (canvas.width / bufferLength) * 2.5;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const barHeight = dataArray[i] / 2;
+        ctx.fillStyle = `rgb(${barHeight + 100}, 100, 255)`;
+        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+        x += barWidth + 1;
+      }
+    };
+    draw();
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setAudioStream(stream);
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        setAudioStream(null);
+        
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'voice_message.webm');
+
+        try {
+          const resp = await fetch(`${API_BASE_URL}/api/upload`, {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (resp.ok) {
+            const url = await resp.text();
+            sendMessage('', url);
+            addLog('success', 'Voice message sent!');
+          } else {
+            addLog('error', 'Failed to send voice message');
+          }
+        } catch (err) {
+          addLog('error', 'Network error sending voice message');
+        } finally {
+          setIsUploading(false);
+        }
+      };
+
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      
+      // Delay drawing slightly to ensure canvas is rendered
+      setTimeout(drawWaveform, 50);
+
+    } catch (err) {
+      addLog('error', 'Could not access microphone');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    }
+  };
+
   const handleCreateServer = async (e: React.FormEvent, iconUrl: string = '') => {
     e.preventDefault()
     if (!newServerName.trim()) return
@@ -542,6 +653,11 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
   const isImageUrl = (url: string) => {
     if (!url || typeof url !== 'string') return false;
     return url.match(/\.(jpeg|jpg|gif|png|webp)$/i) != null || url.includes('giphy.com/media');
+  }
+
+  const isAudioUrl = (url: string) => {
+    if (!url || typeof url !== 'string') return false;
+    return url.match(/\.(webm|mp3|ogg|wav|mp4)$/i) != null;
   }
 
   const currentChannelName = channels.find(c => safeId(c.id) === currentChannelId)?.name || 'General'
@@ -733,7 +849,11 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
                   )}
                   {m.imageUrl && (
                     <div className="chat-image-container">
-                      <img src={`${API_BASE_URL}${m.imageUrl}`} alt="Upload" className="chat-upload-image" />
+                      {isAudioUrl(m.imageUrl) ? (
+                        <audio controls src={`${API_BASE_URL}${m.imageUrl}`} className="chat-audio" />
+                      ) : (
+                        <img src={`${API_BASE_URL}${m.imageUrl}`} alt="Upload" className="chat-upload-image" />
+                      )}
                     </div>
                   )}
                   {Object.keys(groupedReactions).length > 0 && (
@@ -789,47 +909,58 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
           </button>
           <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" style={{ display: 'none' }} />
           <button type="button" className="btn-gif" onClick={() => setShowGifPicker(true)}>GIF</button>
-          <input 
-            type="text" 
-            value={inputText} 
-            onChange={(e) => {
-              const val = e.target.value;
-              setInputText(val);
-              const lastWord = val.split(' ').pop();
-              if (lastWord && lastWord.startsWith('@')) {
-                setMentionSearch(lastWord.substring(1));
-                setShowMentions(true);
-                setMentionIndex(0);
-              } else {
-                setShowMentions(false);
-              }
-            }}
-            onKeyDown={(e) => {
-              if (showMentions) {
-                const filtered = serverMembers.filter(m => m.username.toLowerCase().includes(mentionSearch.toLowerCase())).slice(0, 8);
-                if (e.key === 'ArrowDown') {
-                  e.preventDefault();
-                  setMentionIndex(prev => (prev + 1) % filtered.length);
-                } else if (e.key === 'ArrowUp') {
-                  e.preventDefault();
-                  setMentionIndex(prev => (prev - 1 + filtered.length) % filtered.length);
-                } else if (e.key === 'Enter') {
-                  if (filtered[mentionIndex]) {
-                    e.preventDefault();
-                    const words = inputText.split(' ');
-                    words.pop();
-                    words.push(`@${filtered[mentionIndex].username} `);
-                    setInputText(words.join(' '));
+          
+          {isRecording ? (
+            <div className="recording-ui">
+              <canvas ref={canvasRef} width="200" height="40" className="waveform-canvas" />
+              <button type="button" className="btn-stop-record" onClick={stopRecording}>⏹️ Stop</button>
+            </div>
+          ) : (
+            <>
+              <button type="button" className="btn-mic" onClick={startRecording} title="Record Voice Message">🎤</button>
+              <input 
+                type="text" 
+                value={inputText} 
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setInputText(val);
+                  const lastWord = val.split(' ').pop();
+                  if (lastWord && lastWord.startsWith('@')) {
+                    setMentionSearch(lastWord.substring(1));
+                    setShowMentions(true);
+                    setMentionIndex(0);
+                  } else {
                     setShowMentions(false);
                   }
-                } else if (e.key === 'Escape') {
-                  setShowMentions(false);
-                }
-              }
-            }}
-            placeholder={`Message #${currentChannelName}`} 
-          />
-          <button type="submit">Send</button>
+                }}
+                onKeyDown={(e) => {
+                  if (showMentions) {
+                    const filtered = serverMembers.filter(m => m.username.toLowerCase().includes(mentionSearch.toLowerCase())).slice(0, 8);
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setMentionIndex(prev => (prev + 1) % filtered.length);
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setMentionIndex(prev => (prev - 1 + filtered.length) % filtered.length);
+                    } else if (e.key === 'Enter') {
+                      if (filtered[mentionIndex]) {
+                        e.preventDefault();
+                        const words = inputText.split(' ');
+                        words.pop();
+                        words.push(`@${filtered[mentionIndex].username} `);
+                        setInputText(words.join(' '));
+                        setShowMentions(false);
+                      }
+                    } else if (e.key === 'Escape') {
+                      setShowMentions(false);
+                    }
+                  }
+                }}
+                placeholder={`Message #${currentChannelName}`} 
+              />
+              <button type="submit">Send</button>
+            </>
+          )}
         </form>
 
         {showGifPicker && (

@@ -22,8 +22,11 @@ public class FileUploadController {
 
     private final String uploadDir = "uploads/";
     
-    // Safety check: Only allow these image types
-    private final List<String> allowedTypes = Arrays.asList("image/jpeg", "image/png", "image/gif", "image/webp");
+    // Safety check: Only allow these image and audio types
+    private final List<String> allowedTypes = Arrays.asList(
+        "image/jpeg", "image/png", "image/gif", "image/webp",
+        "audio/webm", "audio/ogg", "audio/mp3", "audio/mpeg", "audio/wav", "audio/mp4"
+    );
     
     // Safety check: 10MB limit (raw file size)
     private final long maxFileSize = 10 * 1024 * 1024;
@@ -42,7 +45,7 @@ public class FileUploadController {
         // 2. Check File Type
         String contentType = file.getContentType();
         if (contentType == null || !allowedTypes.contains(contentType)) {
-            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body("Only images (JPG, PNG, GIF, WebP) are allowed");
+            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body("Only images and audio files are allowed");
         }
 
         try {
@@ -57,9 +60,8 @@ public class FileUploadController {
             Path filePath = path.resolve(fileName);
             
             // 3. Image Processing: Scale down if wider than 1000px
-            // GIFs are tricky to resize with Thumbnailator without extra plugins, 
-            // so we only resize non-GIF images or skip if it's already small.
-            if (!"image/gif".equals(contentType)) {
+            // Skip audio files and GIFs
+            if (!"image/gif".equals(contentType) && !contentType.startsWith("audio/")) {
                 BufferedImage originalImage = ImageIO.read(file.getInputStream());
                 if (originalImage != null) {
                     if (originalImage.getWidth() > 1000) {
