@@ -603,7 +603,7 @@ button:active {
 /* Reaction Styles */
 .reaction-tray {
   position: absolute;
-  bottom: 0px;
+  top: -35px;
   right: 0;
   background: rgba(30, 31, 34, 0.95);
   backdrop-filter: blur(8px);
@@ -622,17 +622,17 @@ button:active {
 .reaction-tray::after {
   content: '';
   position: absolute;
-  top: -20px;
+  top: 0;
   bottom: -20px;
-  left: -20px;
-  right: -20px;
+  left: 0;
+  right: 0;
   z-index: -1;
 }
 
 .message-item:hover .reaction-tray {
   opacity: 1;
   pointer-events: auto;
-  bottom: -30px;
+  top: -40px;
 }
 
 .reaction-tray button {

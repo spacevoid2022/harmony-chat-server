@@ -15,6 +15,7 @@ public class Reaction {
     @JoinColumn(name = "message_id", nullable = false)
     private Message message;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

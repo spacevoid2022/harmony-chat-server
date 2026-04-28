@@ -41,7 +41,7 @@ public class Message {
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
-    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private java.util.List<Reaction> reactions = new java.util.ArrayList<>();
 
     public Message() {}

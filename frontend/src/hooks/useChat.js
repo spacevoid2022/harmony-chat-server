@@ -205,6 +205,7 @@ const useChat = (channelId, onNotification) => {
   }, [channelId, isConnected]);
 
   const toggleReaction = useCallback((messageId, emoji) => {
+    if (!messageId) return;
     if (clientRef.current && isConnected && channelId) {
       const payload = {
         id: messageId.toString(),
