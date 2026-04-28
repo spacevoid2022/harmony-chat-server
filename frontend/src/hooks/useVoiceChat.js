@@ -254,7 +254,8 @@ const useVoiceChat = (voiceChannelId) => {
           width: { max: 1280 },
           height: { max: 720 },
           frameRate: { max: 15 }
-        }
+        },
+        audio: true
       });
       screenStreamRef.current = stream;
       setScreenStream(stream);
