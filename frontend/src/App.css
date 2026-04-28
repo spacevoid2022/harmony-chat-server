@@ -556,6 +556,12 @@ button:active {
   display: flex;
   flex-direction: column;
   max-width: 70%;
+  position: relative;
+  z-index: 1;
+}
+
+.message-item:hover {
+  z-index: 10;
 }
 
 .message-item.own {
@@ -597,7 +603,7 @@ button:active {
 /* Reaction Styles */
 .reaction-tray {
   position: absolute;
-  top: -35px;
+  bottom: 0px;
   right: 0;
   background: rgba(30, 31, 34, 0.95);
   backdrop-filter: blur(8px);
@@ -613,10 +619,20 @@ button:active {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
+.reaction-tray::after {
+  content: '';
+  position: absolute;
+  top: -20px;
+  bottom: -20px;
+  left: -20px;
+  right: -20px;
+  z-index: -1;
+}
+
 .message-item:hover .reaction-tray {
   opacity: 1;
   pointer-events: auto;
-  top: -40px;
+  bottom: -30px;
 }
 
 .reaction-tray button {
