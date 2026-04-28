@@ -52,7 +52,12 @@ const useVoiceChat = (voiceChannelId) => {
     const peer = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:64.181.206.113:3478' },
+        { 
+          urls: 'turn:64.181.206.113:3478', 
+          username: 'harmony', 
+          credential: 'harmony123' 
+        }
       ]
     });
 
@@ -126,7 +131,13 @@ const useVoiceChat = (voiceChannelId) => {
 
   const joinChannel = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
       localStreamRef.current = stream;
       setLocalStream(stream);
 
@@ -238,7 +249,13 @@ const useVoiceChat = (voiceChannelId) => {
 
   const startScreenShare = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      const stream = await navigator.mediaDevices.getDisplayMedia({ 
+        video: {
+          width: { max: 1280 },
+          height: { max: 720 },
+          frameRate: { max: 15 }
+        }
+      });
       screenStreamRef.current = stream;
       setScreenStream(stream);
 
