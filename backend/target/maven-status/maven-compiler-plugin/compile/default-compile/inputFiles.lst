@@ -12,6 +12,7 @@ C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\UserReposi
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\config\WebResourceConfig.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\auth\dto\LoginRequest.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\HarmonyChatServerApplication.java
+C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\websocket\VoiceSignalMessage.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\Server.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\chat\Channel.java
 C:\Users\space\harmony-chat-server\backend\src\main\java\com\app\notifications\NotificationService.java

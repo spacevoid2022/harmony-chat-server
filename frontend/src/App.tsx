@@ -4,6 +4,8 @@ import './App.css'
 import { login, logout, getToken, getUsername, getUserId } from './services/auth'
 // @ts-ignore
 import useChat from './hooks/useChat'
+// @ts-ignore
+import useVoiceChat from './hooks/useVoiceChat'
 import GifPicker from './components/GifPicker'
 import { API_BASE_URL } from './config'
 
@@ -196,6 +198,15 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
       return null;
     }
   })
+
+  const [currentVoiceChannelId, setCurrentVoiceChannelId] = useState<string | null>(null);
+  const { 
+    isConnected: isVoiceConnected, 
+    remoteStreams, 
+    participants, 
+    joinChannel, 
+    leaveChannel 
+  } = useVoiceChat(currentVoiceChannelId);
   
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isServerModalOpen, setIsServerModalOpen] = useState(false)
@@ -210,6 +221,7 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
 
   const [newServerName, setNewServerName] = useState('')
   const [newChannelName, setNewChannelName] = useState('')
+  const [newChannelType, setNewChannelType] = useState('TEXT')
   const [inputText, setInputText] = useState('')
   const [showGifPicker, setShowGifPicker] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
@@ -635,15 +647,21 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getToken()}`
         },
-        body: JSON.stringify({ name: newChannelName })
+        body: JSON.stringify({ name: newChannelName, type: newChannelType })
       })
       if (resp.ok) {
         const created = await resp.json()
         setChannels(prev => [...prev, created])
-        setCurrentChannelId(safeId(created.id))
-        localStorage.setItem('last_channel_id', safeId(created.id))
+        
+        // Only set as current channel if it's a TEXT channel
+        if (created.type !== 'VOICE') {
+          setCurrentChannelId(safeId(created.id))
+          localStorage.setItem('last_channel_id', safeId(created.id))
+        }
+        
         setIsModalOpen(false)
         setNewChannelName('')
+        setNewChannelType('TEXT')
       }
     } catch (err) {
       console.error('Failed to create channel:', err)
@@ -742,18 +760,44 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
         <div className="channel-list">
           {channels.map(channel => {
             const cid = safeId(channel.id);
+            const isVoice = channel.type === 'VOICE';
+            const isActive = isVoice ? currentVoiceChannelId === cid : currentChannelId === cid;
+
             return (
               <div 
                 key={channel.id} 
-                className={`channel-item ${currentChannelId === cid ? 'active' : ''}`}
+                className={`channel-item ${isActive ? 'active' : ''}`}
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                 onClick={() => {
-                  setCurrentChannelId(cid);
-                  localStorage.setItem('last_channel_id', cid);
+                  if (isVoice) {
+                    if (currentVoiceChannelId === cid) {
+                      // Already in this voice channel, do nothing or disconnect?
+                      // Discord stays in the channel.
+                    } else {
+                      setCurrentVoiceChannelId(cid);
+                      joinChannel();
+                    }
+                  } else {
+                    setCurrentChannelId(cid);
+                    localStorage.setItem('last_channel_id', cid);
+                  }
                   setShowSidebar(false);
                 }}
               >
-                <span>{channel.name}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ color: '#8899af', fontSize: '1.1rem' }}>{isVoice ? '🔊' : '#'}</span>
+                  <span>{channel.name}</span>
+                </div>
+                {isVoice && isActive && participants.length > 0 && (
+                  <div className="voice-participants">
+                    {participants.map((p: string) => (
+                      <div key={p} className="voice-participant">
+                        <div className="voice-avatar" />
+                        <span>{p}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {isOwner && (
                   <button 
                     className="btn-delete-channel"
@@ -771,9 +815,48 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
             );
           })}
         </div>
+        <div className="voice-status-container">
+          {currentVoiceChannelId && (
+            <div className="voice-status">
+              <div className="voice-info">
+                <div className="voice-indicator">
+                  <div className={`voice-dot ${isVoiceConnected ? 'active' : ''}`} />
+                  <span>{isVoiceConnected ? 'Voice Connected' : 'Connecting...'}</span>
+                </div>
+                <div className="voice-channel-name">
+                  {channels.find(c => safeId(c.id) === currentVoiceChannelId)?.name}
+                </div>
+              </div>
+              <div className="voice-actions">
+                <button 
+                  className="btn-hangup" 
+                  onClick={() => {
+                    leaveChannel();
+                    setCurrentVoiceChannelId(null);
+                  }}
+                  title="Disconnect"
+                >
+                  📞
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           <button className="btn-logout" onClick={onLogout} style={{ width: '100%' }}>Logout</button>
         </div>
+      </div>
+
+      {/* Remote Audio Streams (Hidden) */}
+      <div style={{ display: 'none' }}>
+        {Object.entries(remoteStreams).map(([uid, stream]: [string, any]) => (
+          <audio 
+            key={uid} 
+            autoPlay 
+            ref={el => { if (el) el.srcObject = stream; }} 
+          />
+        ))}
       </div>
 
       {/* 3. Main Chat (Right) */}
@@ -1095,6 +1178,31 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
           <div className="modal-card">
             <h3>Create Channel</h3>
             <form onSubmit={handleCreateChannel}>
+              <div className="form-group" style={{ marginBottom: '15px' }}>
+                <label>Channel Type</label>
+                <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                    <input 
+                      type="radio" 
+                      name="channelType" 
+                      value="TEXT" 
+                      checked={newChannelType === 'TEXT'} 
+                      onChange={(e) => setNewChannelType(e.target.value)} 
+                    />
+                    # Text
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                    <input 
+                      type="radio" 
+                      name="channelType" 
+                      value="VOICE" 
+                      checked={newChannelType === 'VOICE'} 
+                      onChange={(e) => setNewChannelType(e.target.value)} 
+                    />
+                    🔊 Voice
+                  </label>
+                </div>
+              </div>
               <div className="form-group">
                 <label>Channel Name</label>
                 <input type="text" value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)} placeholder="e.g. general" autoFocus />

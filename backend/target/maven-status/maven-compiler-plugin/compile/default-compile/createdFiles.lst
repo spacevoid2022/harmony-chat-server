@@ -18,6 +18,7 @@ com\app\presence\PresenceService.class
 com\app\websocket\WebSocketConfig.class
 com\app\config\UserDetailsServiceImpl.class
 com\app\presence\PresenceService$PresenceMessage.class
+com\app\websocket\VoiceSignalMessage.class
 com\app\websocket\ChatMessage.class
 com\app\chat\Channel.class
 com\app\chat\ServerController.class

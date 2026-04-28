@@ -87,4 +87,13 @@ public class ChatController {
                 chatMessage
         );
     }
+
+    @MessageMapping("/voice.signal")
+    public void handleVoiceSignal(VoiceSignalMessage signalMessage) {
+        // Broadcast the signal to the specific voice channel
+        messagingTemplate.convertAndSend(
+                "/topic/voice/" + signalMessage.getChannelId(),
+                signalMessage
+        );
+    }
 }

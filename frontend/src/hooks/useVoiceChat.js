@@ -1,0 +1,180 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createWebsocketClient } from '../services/websocket';
+import { getUsername } from '../services/auth';
+
+const useVoiceChat = (voiceChannelId) => {
+  const [isConnected, setIsConnected] = useState(false);
+  const [localStream, setLocalStream] = useState(null);
+  const [remoteStreams, setRemoteStreams] = useState({});
+  const [participants, setParticipants] = useState([]);
+  
+  const clientRef = useRef(null);
+  const subscriptionRef = useRef(null);
+  const peersRef = useRef({});
+  const localStreamRef = useRef(null);
+
+  const username = getUsername();
+
+  const cleanup = useCallback(() => {
+    Object.values(peersRef.current).forEach(peer => peer.close());
+    peersRef.current = {};
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
+    }
+    setLocalStream(null);
+    setRemoteStreams({});
+    setParticipants([]);
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
+    }
+    if (clientRef.current) {
+      // Send leave signal
+      clientRef.current.publish({
+        destination: '/app/voice.signal',
+        body: JSON.stringify({ type: 'leave', channelId: voiceChannelId, senderId: username })
+      });
+      clientRef.current.deactivate();
+      clientRef.current = null;
+    }
+    setIsConnected(false);
+  }, [voiceChannelId, username]);
+
+  const createPeer = useCallback((targetId, isInitiator) => {
+    const peer = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    });
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => {
+        peer.addTrack(track, localStreamRef.current);
+      });
+    }
+
+    peer.onicecandidate = (event) => {
+      if (event.candidate && clientRef.current) {
+        clientRef.current.publish({
+          destination: '/app/voice.signal',
+          body: JSON.stringify({
+            type: 'candidate',
+            channelId: voiceChannelId,
+            senderId: username,
+            targetId: targetId,
+            payload: event.candidate
+          })
+        });
+      }
+    };
+
+    peer.ontrack = (event) => {
+      setRemoteStreams(prev => ({ ...prev, [targetId]: event.streams[0] }));
+      setParticipants(prev => prev.includes(targetId) ? prev : [...prev, targetId]);
+    };
+
+    peersRef.current[targetId] = peer;
+    return peer;
+  }, [voiceChannelId, username]);
+
+  const joinChannel = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStreamRef.current = stream;
+      setLocalStream(stream);
+
+      const client = createWebsocketClient(
+        () => {
+          setIsConnected(true);
+          subscriptionRef.current = client.subscribe(`/topic/voice/${voiceChannelId}`, async (msg) => {
+            const signal = JSON.parse(msg.body);
+            if (signal.senderId === username) return; // ignore self
+
+            if (signal.type === 'join') {
+              // A new user joined, send them an offer
+              const peer = createPeer(signal.senderId, true);
+              const offer = await peer.createOffer();
+              await peer.setLocalDescription(offer);
+              client.publish({
+                destination: '/app/voice.signal',
+                body: JSON.stringify({
+                  type: 'offer',
+                  channelId: voiceChannelId,
+                  senderId: username,
+                  targetId: signal.senderId,
+                  payload: peer.localDescription
+                })
+              });
+            } else if (signal.type === 'offer' && signal.targetId === username) {
+              const peer = createPeer(signal.senderId, false);
+              await peer.setRemoteDescription(new RTCSessionDescription(signal.payload));
+              const answer = await peer.createAnswer();
+              await peer.setLocalDescription(answer);
+              client.publish({
+                destination: '/app/voice.signal',
+                body: JSON.stringify({
+                  type: 'answer',
+                  channelId: voiceChannelId,
+                  senderId: username,
+                  targetId: signal.senderId,
+                  payload: peer.localDescription
+                })
+              });
+            } else if (signal.type === 'answer' && signal.targetId === username) {
+              const peer = peersRef.current[signal.senderId];
+              if (peer) {
+                await peer.setRemoteDescription(new RTCSessionDescription(signal.payload));
+              }
+            } else if (signal.type === 'candidate' && signal.targetId === username) {
+              const peer = peersRef.current[signal.senderId];
+              if (peer) {
+                await peer.addIceCandidate(new RTCIceCandidate(signal.payload));
+              }
+            } else if (signal.type === 'leave') {
+              if (peersRef.current[signal.senderId]) {
+                peersRef.current[signal.senderId].close();
+                delete peersRef.current[signal.senderId];
+              }
+              setRemoteStreams(prev => {
+                const newStreams = { ...prev };
+                delete newStreams[signal.senderId];
+                return newStreams;
+              });
+              setParticipants(prev => prev.filter(p => p !== signal.senderId));
+            }
+          });
+
+          // Announce presence
+          client.publish({
+            destination: '/app/voice.signal',
+            body: JSON.stringify({ type: 'join', channelId: voiceChannelId, senderId: username })
+          });
+        },
+        () => setIsConnected(false),
+        (err) => console.error('Voice WS Error', err)
+      );
+
+      clientRef.current = client;
+      client.activate();
+
+    } catch (err) {
+      console.error('Failed to get local audio stream', err);
+    }
+  }, [voiceChannelId, username, createPeer]);
+
+  const leaveChannel = useCallback(() => {
+    cleanup();
+  }, [cleanup]);
+
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, [cleanup]);
+
+  return { isConnected, localStream, remoteStreams, participants, joinChannel, leaveChannel };
+};
+
+export default useVoiceChat;

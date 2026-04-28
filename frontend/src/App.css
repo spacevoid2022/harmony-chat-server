@@ -858,6 +858,105 @@ button:active {
   background: #ff2222 !important;
 }
 
+/* Voice Channel Styles */
+.voice-status-container {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.voice-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.voice-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.voice-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4ade80;
+}
+
+.voice-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8899af;
+}
+
+.voice-dot.active {
+  background: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+}
+
+.voice-channel-name {
+  font-size: 0.75rem;
+  color: #8899af;
+}
+
+.btn-hangup {
+  background: #f87171 !important;
+  color: white !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  font-size: 1rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-hangup:hover {
+  background: #ef4444 !important;
+  transform: scale(1.1);
+}
+
+.channel-item.active {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.channel-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.voice-participants {
+  margin-left: 24px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.voice-participant {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #8899af;
+}
+
+.voice-avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #646cff;
+}
+
+
 .gif-picker-card {
   width: 400px;
   height: 500px;
