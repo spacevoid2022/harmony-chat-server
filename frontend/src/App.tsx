@@ -205,7 +205,10 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
     remoteStreams, 
     participants, 
     joinChannel, 
-    leaveChannel 
+    leaveChannel,
+    startScreenShare,
+    stopScreenShare,
+    screenStream
   } = useVoiceChat(currentVoiceChannelId);
   
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -827,7 +830,26 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
                   {channels.find(c => safeId(c.id) === currentVoiceChannelId)?.name}
                 </div>
               </div>
-              <div className="voice-actions">
+              <div className="voice-actions" style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className={`btn-screen-share ${screenStream ? 'active' : ''}`}
+                  onClick={() => screenStream ? stopScreenShare() : startScreenShare()}
+                  title="Share Screen"
+                  style={{
+                    background: screenStream ? '#4ade80' : 'rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  🖥️
+                </button>
                 <button 
                   className="btn-hangup" 
                   onClick={() => {
@@ -871,6 +893,26 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
             </div>
           </div>
         </div>
+
+        {/* Video Stage */}
+        {(screenStream || Object.keys(remoteStreams).some(uid => remoteStreams[uid].getVideoTracks().length > 0)) && (
+          <div className="video-stage">
+            {screenStream && (
+              <div className="video-container local-video">
+                <video autoPlay muted ref={el => { if (el) el.srcObject = screenStream; }} />
+                <div className="video-label">Your Screen</div>
+              </div>
+            )}
+            {Object.entries(remoteStreams).map(([uid, stream]: [string, any]) => (
+              stream.getVideoTracks().length > 0 && (
+                <div key={uid} className="video-container remote-video">
+                  <video autoPlay ref={el => { if (el) el.srcObject = stream; }} />
+                  <div className="video-label">{uid}'s Screen</div>
+                </div>
+              )
+            ))}
+          </div>
+        )}
 
         <div className="message-list">
           {(!Array.isArray(messages) || messages.length === 0) && (

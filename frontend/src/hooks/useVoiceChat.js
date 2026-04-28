@@ -5,6 +5,7 @@ import { getUsername } from '../services/auth';
 const useVoiceChat = (voiceChannelId) => {
   const [isConnected, setIsConnected] = useState(false);
   const [localStream, setLocalStream] = useState(null);
+  const [screenStream, setScreenStream] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState({});
   const [participants, setParticipants] = useState([]);
   
@@ -12,6 +13,7 @@ const useVoiceChat = (voiceChannelId) => {
   const subscriptionRef = useRef(null);
   const peersRef = useRef({});
   const localStreamRef = useRef(null);
+  const screenStreamRef = useRef(null);
 
   const username = getUsername();
 
@@ -22,7 +24,12 @@ const useVoiceChat = (voiceChannelId) => {
       localStreamRef.current.getTracks().forEach(track => track.stop());
       localStreamRef.current = null;
     }
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(track => track.stop());
+      screenStreamRef.current = null;
+    }
     setLocalStream(null);
+    setScreenStream(null);
     setRemoteStreams({});
     setParticipants([]);
     if (subscriptionRef.current) {
@@ -54,6 +61,33 @@ const useVoiceChat = (voiceChannelId) => {
         peer.addTrack(track, localStreamRef.current);
       });
     }
+
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(track => {
+        peer.addTrack(track, screenStreamRef.current);
+      });
+    }
+
+    peer.onnegotiationneeded = async () => {
+      if (isInitiator && clientRef.current) {
+        try {
+          const offer = await peer.createOffer();
+          await peer.setLocalDescription(offer);
+          clientRef.current.publish({
+            destination: '/app/voice.signal',
+            body: JSON.stringify({
+              type: 'offer',
+              channelId: voiceChannelId,
+              senderId: username,
+              targetId: targetId,
+              payload: peer.localDescription
+            })
+          });
+        } catch (err) {
+          console.error('Negotiation error', err);
+        }
+      }
+    };
 
     peer.onicecandidate = (event) => {
       if (event.candidate && clientRef.current) {
@@ -202,7 +236,36 @@ const useVoiceChat = (voiceChannelId) => {
     };
   }, [cleanup]);
 
-  return { isConnected, localStream, remoteStreams, participants, joinChannel, leaveChannel };
+  const startScreenShare = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      screenStreamRef.current = stream;
+      setScreenStream(stream);
+
+      Object.values(peersRef.current).forEach((peer) => {
+        stream.getTracks().forEach(track => {
+          peer.addTrack(track, stream);
+        });
+        if (peer.onnegotiationneeded) peer.onnegotiationneeded();
+      });
+
+      stream.getVideoTracks()[0].onended = () => {
+        stopScreenShare();
+      };
+    } catch (err) {
+      console.error('Failed to start screen share', err);
+    }
+  }, [voiceChannelId, username]);
+
+  const stopScreenShare = useCallback(() => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(track => track.stop());
+      screenStreamRef.current = null;
+      setScreenStream(null);
+    }
+  }, []);
+
+  return { isConnected, localStream, screenStream, remoteStreams, participants, joinChannel, leaveChannel, startScreenShare, stopScreenShare };
 };
 
 export default useVoiceChat;
