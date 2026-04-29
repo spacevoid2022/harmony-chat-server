@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import './App.css'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -467,8 +467,17 @@ function ChatView({
         headers: { 'Authorization': `Bearer ${getToken()}` }
       })
       if (resp.status === 401) {
-        onLogout()
-        return
+        // Only log out if we are sure it's a permanent auth failure
+        try {
+          const text = await resp.text();
+          if (text && (text.includes("Unauthorized") || text.includes("Expired"))) {
+            onLogout()
+            return
+          }
+        } catch (e) {
+          // If we can't read the body, don't logout yet
+          console.warn("Could not read auth error body", e);
+        }
       }
       if (resp.ok) {
         const data = await resp.json()
@@ -491,8 +500,15 @@ function ChatView({
         headers: { 'Authorization': `Bearer ${getToken()}` }
       })
       if (resp.status === 401) {
-        onLogout()
-        return
+        try {
+          const text = await resp.text();
+          if (text && (text.includes("Unauthorized") || text.includes("Expired"))) {
+            onLogout()
+            return
+          }
+        } catch (e) {
+          console.warn("Could not read auth error body", e);
+        }
       }
       if (resp.ok) {
         const data = await resp.json()
@@ -1074,137 +1090,21 @@ function ChatView({
             const sender = m.senderId || 'Unknown';
             const currentUsername = getUsername();
             const isOwn = sender.toLowerCase() === (currentUsername || '').toLowerCase();
-            const isSystem = m.content?.startsWith('➔');
-            const isMentioned = m.content?.includes(`@${currentUsername}`);
-            const reactions = m.reactions || [];
-            const groupedReactions = reactions.reduce((acc: any, r: any) => {
-              acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-              return acc;
-            }, {});
-
-            if (isSystem) {
-              return (
-                <div key={i} className="system-message">
-                  <span className="system-message-icon">➔</span>
-                  {m.content.substring(1)}
-                </div>
-              );
-            }
-
+            
             return (
-              <div key={i} className={`message-item ${isOwn ? 'own' : ''}`}>
-                {!isOwn && (
-                  <div className="message-avatar">
-                    {m.senderAvatarUrl ? (
-                      <img src={m.senderAvatarUrl.startsWith('/') ? `${API_BASE_URL}${m.senderAvatarUrl}` : m.senderAvatarUrl} alt="Avatar" />
-                    ) : (
-                      <div className="avatar-placeholder">{sender.substring(0, 1).toUpperCase()}</div>
-                    )}
-                    <div className={`user-status-dot ${m.senderStatus?.toLowerCase() || 'offline'}`} />
-                  </div>
-                )}
-                <div className="message-content-wrapper">
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                    <span className="message-sender">{sender}</span>
-                    {m.senderCustomStatus && (
-                      <span className="message-custom-status">— {m.senderCustomStatus}</span>
-                    )}
-                  </div>
-                  <div className={`message-bubble ${isMentioned ? 'mentioned' : ''}`}>
-                  <div className="reaction-tray">
-                    {['👍', '😂', '👎', '😢', '❤️'].map(emoji => (
-                      <button key={emoji} onClick={() => toggleReaction(m.id, emoji)}>{emoji}</button>
-                    ))}
-                  </div>
-                  {(isOwn || isOwner) && (
-                    <button 
-                      className="btn-delete-message" 
-                      onClick={() => {
-                        if (m.id && window.confirm('Delete this message?')) {
-                          deleteMessage(m.id);
-                        }
-                      }}
-                      title="Delete message"
-                    >
-                      🗑️
-                    </button>
-                  )}
-                  {m.content ? (
-                    isImageUrl(m.content) ? (
-                      <img src={m.content} alt="GIF" className="chat-image" />
-                    ) : (
-                      <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          a: ({node, ...props}) => {
-                            const url = props.href || '';
-                            const youtubeId = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)?.[1];
-                            if (youtubeId) {
-                              return (
-                                <div className="youtube-preview-container">
-                                  <a href={url} target="_blank" rel="noreferrer" className="chat-link">{url}</a>
-                                  <div className="youtube-wrapper">
-                                    <iframe 
-                                      src={`https://www.youtube.com/embed/${youtubeId}`} 
-                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                      allowFullScreen 
-                                    />
-                                  </div>
-                                </div>
-                              );
-                            }
-                            return <a {...props} target="_blank" rel="noreferrer" className="chat-link" />;
-                          },
-                          code: ({node, ...props}) => (
-                            <code className="chat-code" {...props} />
-                          ),
-                          pre: ({node, ...props}) => (
-                            <pre className="chat-pre" {...props} />
-                          )
-                        }}
-                      >
-                        {m.content}
-                      </ReactMarkdown>
-                    )
-                  ) : (
-                    !m.imageUrl && '(Empty message)'
-                  )}
-                  {m.imageUrl && (
-                    <div className="chat-image-container">
-                      {isAudioUrl(m.imageUrl) ? (
-                        <audio controls src={`${API_BASE_URL}${m.imageUrl}`} className="chat-audio" />
-                      ) : (
-                        <img src={`${API_BASE_URL}${m.imageUrl}`} alt="Upload" className="chat-upload-image" />
-                      )}
-                    </div>
-                  )}
-                  {Object.keys(groupedReactions).length > 0 && (
-                    <div className="reactions-display">
-                      {Object.entries(groupedReactions).map(([emoji, count]: any) => (
-                        <div 
-                          key={emoji} 
-                          className={`reaction-badge ${reactions.some((r: any) => r.emoji === emoji && r.username === currentUsername) ? 'active' : ''}`}
-                          onClick={() => toggleReaction(m.id, emoji)}
-                        >
-                          {emoji} <span>{count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {isOwn && (
-                <div className="message-avatar">
-                  {userAvatar ? (
-                    <img src={userAvatar.startsWith('/') ? `${API_BASE_URL}${userAvatar}` : userAvatar} alt="Avatar" />
-                  ) : (
-                    <div className="avatar-placeholder">{sender.substring(0, 1).toUpperCase()}</div>
-                  )}
-                  <div className={`user-status-dot ${userStatus.toLowerCase()}`} />
-                </div>
-              )}
-            </div>
-          );
+              <MessageItem 
+                key={m.id || i}
+                m={m}
+                isOwn={isOwn}
+                isOwner={isOwner}
+                currentUsername={currentUsername}
+                toggleReaction={toggleReaction}
+                deleteMessage={deleteMessage}
+                isImageUrl={isImageUrl}
+                isAudioUrl={isAudioUrl}
+                API_BASE_URL={API_BASE_URL}
+              />
+            );
           })}
           <div ref={messagesEndRef} />
         </div>
@@ -1515,6 +1415,141 @@ function ChatView({
     </div>
   )
 }
+
+const MessageItem = memo(({ m, isOwn, isOwner, currentUsername, toggleReaction, deleteMessage, isImageUrl, isAudioUrl, API_BASE_URL }: any) => {
+  const sender = m.senderId || 'Unknown';
+  const isSystem = m.content?.startsWith('➔');
+  const isMentioned = m.content?.includes(`@${currentUsername}`);
+  const reactions = m.reactions || [];
+  const groupedReactions = reactions.reduce((acc: any, r: any) => {
+    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+    return acc;
+  }, {});
+
+  if (isSystem) {
+    return (
+      <div className="system-message">
+        <span className="system-message-icon">➔</span>
+        {m.content.substring(1)}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`message-item ${isOwn ? 'own' : ''}`}>
+      {!isOwn && (
+        <div className="message-avatar">
+          {m.senderAvatarUrl ? (
+            <img src={m.senderAvatarUrl.startsWith('/') ? `${API_BASE_URL}${m.senderAvatarUrl}` : m.senderAvatarUrl} alt="Avatar" />
+          ) : (
+            <div className="avatar-placeholder">{sender.substring(0, 1).toUpperCase()}</div>
+          )}
+          <div className={`user-status-dot ${m.senderStatus?.toLowerCase() || 'offline'}`} />
+        </div>
+      )}
+      <div className="message-content-wrapper">
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <span className="message-sender">{sender}</span>
+          {m.senderCustomStatus && (
+            <span className="message-custom-status">— {m.senderCustomStatus}</span>
+          )}
+        </div>
+        <div className={`message-bubble ${isMentioned ? 'mentioned' : ''}`}>
+          <div className="reaction-tray">
+            {['👍', '😂', '👎', '😢', '❤️'].map(emoji => (
+              <button key={emoji} onClick={() => toggleReaction(m.id, emoji)}>{emoji}</button>
+            ))}
+          </div>
+          {(isOwn || isOwner) && (
+            <button 
+              className="btn-delete-message" 
+              onClick={() => {
+                if (m.id && window.confirm('Delete this message?')) {
+                  deleteMessage(m.id);
+                }
+              }}
+              title="Delete message"
+            >
+              🗑️
+            </button>
+          )}
+          {m.content ? (
+            isImageUrl(m.content) ? (
+              <img src={m.content} alt="GIF" className="chat-image" />
+            ) : (
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({node, ...props}) => {
+                    const url = props.href || '';
+                    const youtubeId = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)?.[1];
+                    if (youtubeId) {
+                      return (
+                        <div className="youtube-preview-container">
+                          <a href={url} target="_blank" rel="noreferrer" className="chat-link">{url}</a>
+                          <div className="youtube-wrapper">
+                            <iframe 
+                              src={`https://www.youtube.com/embed/${youtubeId}`} 
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                              allowFullScreen 
+                            />
+                          </div>
+                        </div>
+                      );
+                    }
+                    return <a {...props} target="_blank" rel="noreferrer" className="chat-link" />;
+                  },
+                  code: ({node, ...props}) => (
+                    <code className="chat-code" {...props} />
+                  ),
+                  pre: ({node, ...props}) => (
+                    <pre className="chat-pre" {...props} />
+                  )
+                }}
+              >
+                {m.content}
+              </ReactMarkdown>
+            )
+          ) : (
+            !m.imageUrl && '(Empty message)'
+          )}
+          {m.imageUrl && (
+            <div className="chat-image-container">
+              {isAudioUrl(m.imageUrl) ? (
+                <audio controls src={`${API_BASE_URL}${m.imageUrl}`} className="chat-audio" />
+              ) : (
+                <img src={`${API_BASE_URL}${m.imageUrl}`} alt="Upload" className="chat-upload-image" />
+              )}
+            </div>
+          )}
+          {Object.keys(groupedReactions).length > 0 && (
+            <div className="reactions-display">
+              {Object.entries(groupedReactions).map(([emoji, count]: any) => (
+                <div 
+                  key={emoji} 
+                  className={`reaction-badge ${reactions.some((r: any) => r.emoji === emoji && r.username === currentUsername) ? 'active' : ''}`}
+                  onClick={() => toggleReaction(m.id, emoji)}
+                >
+                  {emoji} <span>{count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      {isOwn && (
+        <div className="message-avatar">
+          {m.senderAvatarUrl ? (
+            <img src={m.senderAvatarUrl.startsWith('/') ? `${API_BASE_URL}${m.senderAvatarUrl}` : m.senderAvatarUrl} alt="Avatar" />
+          ) : (
+            <div className="avatar-placeholder">{sender.substring(0, 1).toUpperCase()}</div>
+          )}
+          <div className={`user-status-dot ${m.senderStatus?.toLowerCase() || 'online'}`} />
+        </div>
+      )}
+    </div>
+  );
+});
 
 function LogWindow({ logs, logEndRef }: { logs: LogEntry[], logEndRef: React.RefObject<HTMLDivElement | null> }) {
   if (logs.length === 0) return null
