@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import './App.css'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 // @ts-ignore
 import { login, logout, getToken, getUsername, getUserId, getAvatarUrl, getStatus, getCustomStatus } from './services/auth'
 // @ts-ignore
@@ -1131,7 +1133,38 @@ function ChatView({
                     isImageUrl(m.content) ? (
                       <img src={m.content} alt="GIF" className="chat-image" />
                     ) : (
-                      m.content
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          a: ({node, ...props}) => {
+                            const url = props.href || '';
+                            const youtubeId = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)?.[1];
+                            if (youtubeId) {
+                              return (
+                                <div className="youtube-preview-container">
+                                  <a href={url} target="_blank" rel="noreferrer" className="chat-link">{url}</a>
+                                  <div className="youtube-wrapper">
+                                    <iframe 
+                                      src={`https://www.youtube.com/embed/${youtubeId}`} 
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                      allowFullScreen 
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return <a {...props} target="_blank" rel="noreferrer" className="chat-link" />;
+                          },
+                          code: ({node, ...props}) => (
+                            <code className="chat-code" {...props} />
+                          ),
+                          pre: ({node, ...props}) => (
+                            <pre className="chat-pre" {...props} />
+                          )
+                        }}
+                      >
+                        {m.content}
+                      </ReactMarkdown>
                     )
                   ) : (
                     !m.imageUrl && '(Empty message)'
