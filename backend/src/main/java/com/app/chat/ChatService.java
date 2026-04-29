@@ -66,7 +66,10 @@ public class ChatService {
         return messageRepository.findById(messageId)
                 .map(message -> {
                     boolean isSender = message.getSender().getUsername().equals(username);
-                    boolean isServerOwner = message.getChannel().getServer().getOwnerId().equals(user.getId());
+                    boolean isServerOwner = false;
+                    if (message.getChannel().getServer() != null) {
+                        isServerOwner = message.getChannel().getServer().getOwnerId().equals(user.getId());
+                    }
 
                     if (isSender || isServerOwner) {
                         messageRepository.delete(message);

@@ -23,6 +23,15 @@ public class Channel {
     private Server server;
 
     @com.fasterxml.jackson.annotation.JsonIgnore
+    @ManyToMany
+    @JoinTable(
+      name = "channel_participants",
+      joinColumns = @JoinColumn(name = "channel_id"),
+      inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private List<User> participants = new java.util.ArrayList<>();
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL)
     private List<Message> messages;
 
@@ -33,6 +42,12 @@ public class Channel {
         this.server = server;
     }
 
+    public Channel(String name, List<User> participants) {
+        this.name = name;
+        this.participants = participants;
+        this.type = "DM";
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
@@ -41,6 +56,8 @@ public class Channel {
     public void setType(String type) { this.type = type; }
     public Server getServer() { return server; }
     public void setServer(Server server) { this.server = server; }
+    public List<User> getParticipants() { return participants; }
+    public void setParticipants(List<User> participants) { this.participants = participants; }
     public List<Message> getMessages() { return messages; }
     public void setMessages(List<Message> messages) { this.messages = messages; }
 }

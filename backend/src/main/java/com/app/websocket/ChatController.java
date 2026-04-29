@@ -40,13 +40,15 @@ public class ChatController {
                 chatMessage
         );
 
-        // Send a notification for the new message
-        notificationService.notifyNewMessage(
-                savedMessage.getChannel().getServer().getId().toString(),
-                chatMessage.getChannelId(),
-                chatMessage.getSenderId(),
-                chatMessage.getContent()
-        );
+        // Send a notification for the new message if it's a server channel
+        if (savedMessage.getChannel().getServer() != null) {
+            notificationService.notifyNewMessage(
+                    savedMessage.getChannel().getServer().getId().toString(),
+                    chatMessage.getChannelId(),
+                    chatMessage.getSenderId(),
+                    chatMessage.getContent()
+            );
+        }
     }
 
     @MessageMapping("/chat.deleteMessage")

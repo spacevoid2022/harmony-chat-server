@@ -370,6 +370,13 @@ function ChatView({
   const [mentionSearch, setMentionSearch] = useState('')
   const [showMentions, setShowMentions] = useState(false)
   const [mentionIndex, setMentionIndex] = useState(0)
+
+  // Home & DM State
+  const [friends, setFriends] = useState<any[]>([])
+  const [pendingFriends, setPendingFriends] = useState<any[]>([])
+  const [dms, setDms] = useState<any[]>([])
+  const [homeTab, setHomeTab] = useState<'online' | 'all' | 'pending' | 'add'>('online')
+  const [friendSearch, setFriendSearch] = useState('')
   
   // Notification State
   const [unreadPings, setUnreadPings] = useState<Record<string, number>>({})
@@ -583,8 +590,86 @@ function ChatView({
     }
   };
 
+  const fetchFriends = async () => {
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/friends`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (resp.ok) setFriends(await resp.json());
+    } catch (err) { console.error('Friends fetch failed', err); }
+  };
+
+  const fetchPendingFriends = async () => {
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/friends/pending`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (resp.ok) setPendingFriends(await resp.json());
+    } catch (err) { console.error('Pending fetch failed', err); }
+  };
+
+  const fetchDMs = async () => {
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/dm`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (resp.ok) setDms(await resp.json());
+    } catch (err) { console.error('DMs fetch failed', err); }
+  };
+
+  const handleSendFriendRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!friendSearch.trim()) return;
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/friends/request/${friendSearch}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (resp.ok) {
+        addLog('success', `Friend request sent to ${friendSearch}`);
+        setFriendSearch('');
+        fetchPendingFriends();
+      } else {
+        const error = await resp.text();
+        addLog('error', `Failed: ${error}`);
+      }
+    } catch (err) { addLog('error', 'Network error'); }
+  };
+
+  const handleAcceptFriend = async (username: string) => {
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/friends/accept/${username}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (resp.ok) {
+        addLog('success', `Accepted ${username}`);
+        fetchFriends();
+        fetchPendingFriends();
+      }
+    } catch (err) { addLog('error', 'Network error'); }
+  };
+
+  const handleOpenDM = async (username: string) => {
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/dm/open/${username}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (resp.ok) {
+        const dmChannel = await resp.json();
+        setCurrentServerId(null); // Home view
+        setCurrentChannelId(dmChannel.id.toString());
+        fetchDMs();
+      }
+    } catch (err) { addLog('error', 'Network error opening DM'); }
+  };
+
   useEffect(() => {
     fetchServers()
+    fetchFriends()
+    fetchPendingFriends()
+    fetchDMs()
   }, [])
 
   useEffect(() => {
@@ -593,6 +678,10 @@ function ChatView({
       fetchServerMembers()
       // Clear pings for this server when we enter it
       setUnreadPings(prev => ({ ...prev, [currentServerId]: 0 }));
+    } else {
+      // Home view logic: refresh friends/DMs
+      fetchFriends()
+      fetchDMs()
     }
   }, [currentServerId])
 
@@ -825,7 +914,15 @@ function ChatView({
 
 
 
-  const currentChannelName = channels.find(c => safeId(c.id) === currentChannelId)?.name || 'General'
+  const currentChannelObj = currentServerId 
+    ? channels.find(c => safeId(c.id) === currentChannelId)
+    : dms.find(d => safeId(d.id) === currentChannelId);
+
+  const currentChannelName = currentChannelObj 
+    ? (currentChannelObj.type === 'DM' 
+        ? currentChannelObj.participants.find((p: any) => p.username !== getUsername())?.username || 'DM'
+        : currentChannelObj.name)
+    : 'Friends';
 
   const currentServerObj = servers.find(s => safeId(s.id) === currentServerId)
   const isOwner = currentServerObj?.ownerId?.toString() === getUserId()
@@ -839,6 +936,18 @@ function ChatView({
 
       {/* 1. Server Dock (Far Left) */}
       <div className={`server-dock ${showSidebar ? 'sidebar-open' : ''}`}>
+        <div 
+          className={`server-icon home-icon ${currentServerId === null ? 'active' : ''}`}
+          onClick={() => {
+            setCurrentServerId(null);
+            localStorage.setItem('last_server_id', '');
+          }}
+          title="Home"
+        >
+          <div className="server-indicator" />
+          <span style={{ fontSize: '1.5rem' }}>🏠</span>
+        </div>
+        <div className="server-separator" />
         {servers.map(server => {
           const sid = safeId(server.id);
           return (
@@ -872,7 +981,7 @@ function ChatView({
       <div className={`sidebar ${showSidebar ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0, paddingRight: '10px' }}>
-            {currentServerObj?.name || 'Channels'}
+            {currentServerId ? (currentServerObj?.name || 'Channels') : 'Home'}
           </h3>
           {currentServerId && (
             <button
@@ -900,67 +1009,106 @@ function ChatView({
             </button>
           )}
         </div>
-        <div className="sidebar-header" style={{ paddingTop: 0, paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <span style={{ fontSize: '0.8rem', color: '#8899af', textTransform: 'uppercase', letterSpacing: '1px' }}>Channels</span>
-          <button className="btn-add-channel" onClick={() => setIsModalOpen(true)}>+</button>
-        </div>
+        {currentServerId && (
+          <div className="sidebar-header" style={{ paddingTop: 0, paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <span style={{ fontSize: '0.8rem', color: '#8899af', textTransform: 'uppercase', letterSpacing: '1px' }}>Channels</span>
+            <button className="btn-add-channel" onClick={() => setIsModalOpen(true)}>+</button>
+          </div>
+        )}
         <div className="channel-list">
-          {channels.map(channel => {
-            const cid = safeId(channel.id);
-            const isVoice = channel.type === 'VOICE';
-            const isActive = isVoice ? currentVoiceChannelId === cid : currentChannelId === cid;
-
-            return (
+          {!currentServerId ? (
+            <>
               <div 
-                key={channel.id} 
-                className={`channel-item ${isActive ? 'active' : ''}`}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                onClick={() => {
-                  if (isVoice) {
-                    if (currentVoiceChannelId === cid) {
-                      // Already in this voice channel, do nothing or disconnect?
-                      // Discord stays in the channel.
-                    } else {
-                      setCurrentVoiceChannelId(cid);
-                      joinChannel();
-                    }
-                  } else {
-                    setCurrentChannelId(cid);
-                    localStorage.setItem('last_channel_id', cid);
-                  }
-                  setShowSidebar(false);
-                }}
+                className={`channel-item ${currentChannelId === null ? 'active' : ''}`}
+                onClick={() => { setCurrentChannelId(null); setShowSidebar(false); }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ color: '#8899af', fontSize: '1.1rem' }}>{isVoice ? '🔊' : '#'}</span>
-                  <span>{channel.name}</span>
+                  <span style={{ color: '#8899af', fontSize: '1.1rem' }}>👥</span>
+                  <span>Friends</span>
                 </div>
-                {isVoice && isActive && participants.length > 0 && (
-                  <div className="voice-participants">
-                    {participants.map((p: string) => (
-                      <div key={p} className="voice-participant">
-                        <div className="voice-avatar" />
-                        <span>{p}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {isOwner && (
-                  <button 
-                    className="btn-delete-channel"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteChannel(cid);
-                    }}
-                    style={{ background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.8rem', padding: '0 5px' }}
-                    title="Delete Channel"
-                  >
-                    ✕
-                  </button>
-                )}
               </div>
-            );
-          })}
+              <div className="sidebar-header" style={{ paddingTop: '20px', paddingBottom: '10px' }}>
+                <span style={{ fontSize: '0.8rem', color: '#8899af', textTransform: 'uppercase', letterSpacing: '1px' }}>Direct Messages</span>
+              </div>
+              {dms.map(dm => {
+                const cid = safeId(dm.id);
+                const otherUser = dm.participants?.find((p: any) => p.username !== getUsername()) || { username: 'Unknown' };
+                return (
+                  <div 
+                    key={dm.id} 
+                    className={`channel-item ${currentChannelId === cid ? 'active' : ''}`}
+                    onClick={() => { setCurrentChannelId(cid); setShowSidebar(false); }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="dm-avatar" style={{ position: 'relative', width: '32px', height: '32px' }}>
+                        {otherUser.avatarUrl ? (
+                          <img src={otherUser.avatarUrl.startsWith('/') ? `${API_BASE_URL}${otherUser.avatarUrl}` : otherUser.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+                        ) : (
+                          <div className="avatar-placeholder" style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#313338', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>{otherUser.username.substring(0, 1).toUpperCase()}</div>
+                        )}
+                        <div className={`user-status-dot ${otherUser.status?.toLowerCase() || 'offline'}`} />
+                      </div>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{otherUser.username}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            channels.map(channel => {
+              const cid = safeId(channel.id);
+              const isVoice = channel.type === 'VOICE';
+              const isActive = isVoice ? currentVoiceChannelId === cid : currentChannelId === cid;
+
+              return (
+                <div 
+                  key={channel.id} 
+                  className={`channel-item ${isActive ? 'active' : ''}`}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  onClick={() => {
+                    if (isVoice) {
+                      if (currentVoiceChannelId !== cid) {
+                        setCurrentVoiceChannelId(cid);
+                        joinChannel();
+                      }
+                    } else {
+                      setCurrentChannelId(cid);
+                      localStorage.setItem('last_channel_id', cid);
+                    }
+                    setShowSidebar(false);
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: '#8899af', fontSize: '1.1rem' }}>{isVoice ? '🔊' : '#'}</span>
+                    <span>{channel.name}</span>
+                  </div>
+                  {isVoice && isActive && participants.length > 0 && (
+                    <div className="voice-participants">
+                      {participants.map((p: string) => (
+                        <div key={p} className="voice-participant">
+                          <div className="voice-avatar" />
+                          <span>{p}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {isOwner && (
+                    <button 
+                      className="btn-delete-channel" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteChannel(cid);
+                      }}
+                      style={{ background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.8rem', padding: '0 5px' }}
+                      title="Delete Channel"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
         <div className="voice-status-container">
           {currentVoiceChannelId && (
@@ -1083,16 +1231,93 @@ function ChatView({
 
       {/* 3. Main Chat (Right) */}
       <div className="main-chat">
-        <div className="chat-header">
-          <button className="btn-menu" onClick={() => setShowSidebar(s => !s)}>☰</button>
-          <div>
-            <h3># {currentChannelName}</h3>
-            <div className="status-indicator">
-              <div className="status-dot"></div>
-              {isConnected ? 'Connected' : 'Connecting...'}
+        {currentServerId === null && currentChannelId === null ? (
+          <div className="friends-view">
+            <div className="friends-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <span style={{ fontSize: '1.2rem', color: '#8899af' }}>👥</span>
+                <span style={{ fontWeight: 600 }}>Friends</span>
+                <div className="header-divider" />
+                <button className={`friends-tab ${homeTab === 'online' ? 'active' : ''}`} onClick={() => setHomeTab('online')}>Online</button>
+                <button className={`friends-tab ${homeTab === 'all' ? 'active' : ''}`} onClick={() => setHomeTab('all')}>All</button>
+                <button className={`friends-tab ${homeTab === 'pending' ? 'active' : ''}`} onClick={() => setHomeTab('pending')}>Pending</button>
+                <button className={`friends-tab add-friend ${homeTab === 'add' ? 'active' : ''}`} onClick={() => setHomeTab('add')}>Add Friend</button>
+              </div>
+            </div>
+            <div className="friends-content">
+              {homeTab === 'add' ? (
+                <div className="add-friend-container">
+                  <h2>Add Friend</h2>
+                  <p style={{ color: '#8899af', marginBottom: '15px' }}>You can add friends with their Harmony username. It's case sensitive!</p>
+                  <form onSubmit={handleSendFriendRequest} className="add-friend-form">
+                    <input 
+                      type="text" 
+                      placeholder="Enter a username" 
+                      value={friendSearch}
+                      onChange={(e) => setFriendSearch(e.target.value)}
+                    />
+                    <button type="submit">Send Friend Request</button>
+                  </form>
+                </div>
+              ) : (
+                <div className="friends-list">
+                  <div className="friends-count">
+                    {homeTab === 'pending' ? `Pending Requests — ${pendingFriends.length}` : 
+                     homeTab === 'online' ? `Online — ${friends.filter(f => f.status !== 'OFFLINE').length}` : 
+                     `All Friends — ${friends.length}`}
+                  </div>
+                  {homeTab === 'pending' ? (
+                    pendingFriends.map(user => (
+                      <div key={user.id} className="friend-item">
+                        <div className="friend-info">
+                          <div className="friend-avatar">
+                            {user.avatarUrl ? <img src={user.avatarUrl} alt="Avatar" /> : user.username[0].toUpperCase()}
+                          </div>
+                          <span>{user.username}</span>
+                        </div>
+                        <div className="friend-actions">
+                          <button className="btn-friend-action accept" onClick={() => handleAcceptFriend(user.username)} title="Accept">✓</button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    friends.filter(f => homeTab === 'all' || f.status !== 'OFFLINE').map(user => (
+                      <div key={user.id} className="friend-item" onClick={() => handleOpenDM(user.username)}>
+                        <div className="friend-info">
+                          <div className="friend-avatar">
+                            {user.avatarUrl ? <img src={user.avatarUrl} alt="Avatar" /> : user.username[0].toUpperCase()}
+                            <div className={`user-status-dot ${user.status?.toLowerCase() || 'offline'}`} />
+                          </div>
+                          <div className="friend-name-col">
+                            <span className="friend-username">{user.username}</span>
+                            <span className="friend-status-text">{user.status}</span>
+                          </div>
+                        </div>
+                        <div className="friend-actions">
+                          <button className="btn-chat" onClick={(e) => { e.stopPropagation(); handleOpenDM(user.username); }} title="Message">💬</button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="chat-header">
+              <button className="btn-menu" onClick={() => setShowSidebar(s => !s)}>☰</button>
+              <div>
+                <h3>
+                  <span style={{ color: '#8899af', marginRight: '5px' }}>{currentChannelObj?.type === 'DM' ? '@' : '#'}</span>
+                  {currentChannelName}
+                </h3>
+                <div className="status-indicator">
+                  <div className="status-dot"></div>
+                  {isConnected ? 'Connected' : 'Connecting...'}
+                </div>
+              </div>
+            </div>
 
         {currentVoiceChannelId && (
           <div className="video-stage">
@@ -1252,6 +1477,8 @@ function ChatView({
             onSelect={handleGifSelect} 
             onClose={() => setShowGifPicker(false)} 
           />
+        )}
+          </>
         )}
       </div>
 
