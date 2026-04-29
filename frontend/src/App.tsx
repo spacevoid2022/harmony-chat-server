@@ -926,7 +926,7 @@ function ChatView({
 
   const currentChannelName = currentChannelObj 
     ? (currentChannelObj.type === 'DM' 
-        ? currentChannelObj.participants.find((p: any) => p.username !== getUsername())?.username || 'DM'
+        ? currentChannelObj.participants?.find((p: any) => p.username !== getUsername())?.username || 'DM'
         : currentChannelObj.name)
     : 'Friends';
 
@@ -1288,7 +1288,11 @@ function ChatView({
                         <div key={user.id} className="friend-item">
                           <div className="friend-info">
                             <div className="friend-avatar">
-                              {user.avatarUrl ? <img src={user.avatarUrl} alt="Avatar" /> : user.username[0].toUpperCase()}
+                              {user.avatarUrl ? (
+  <img src={user.avatarUrl.startsWith('/') ? `${API_BASE_URL}${user.avatarUrl}` : user.avatarUrl} alt="Avatar" />
+) : (
+  user.username[0].toUpperCase()
+)}
                             </div>
                             <span>{user.username}</span>
                           </div>
@@ -1305,7 +1309,11 @@ function ChatView({
                         <div key={user.id} className="friend-item" style={{ cursor: 'default', opacity: 0.8 }}>
                           <div className="friend-info">
                             <div className="friend-avatar">
-                              {user.avatarUrl ? <img src={user.avatarUrl} alt="Avatar" /> : user.username[0].toUpperCase()}
+                              {user.avatarUrl ? (
+  <img src={user.avatarUrl.startsWith('/') ? `${API_BASE_URL}${user.avatarUrl}` : user.avatarUrl} alt="Avatar" />
+) : (
+  user.username[0].toUpperCase()
+)}
                             </div>
                             <span>{user.username}</span>
                           </div>
@@ -1320,7 +1328,11 @@ function ChatView({
                       <div key={user.id} className="friend-item" onClick={() => handleOpenDM(user.username)}>
                         <div className="friend-info">
                           <div className="friend-avatar">
-                            {user.avatarUrl ? <img src={user.avatarUrl} alt="Avatar" /> : user.username[0].toUpperCase()}
+                            {user.avatarUrl ? (
+  <img src={user.avatarUrl.startsWith('/') ? `${API_BASE_URL}${user.avatarUrl}` : user.avatarUrl} alt="Avatar" />
+) : (
+  user.username[0].toUpperCase()
+)}
                             <div className={`user-status-dot ${user.status?.toLowerCase() || 'offline'}`} />
                           </div>
                           <div className="friend-name-col">

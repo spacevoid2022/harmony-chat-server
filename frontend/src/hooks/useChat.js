@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { API_BASE_URL } from '../config';
-import { getUsername } from '../services/auth';
+import { getUsername, getToken } from '../services/auth';
 import { createWebsocketClient } from '../services/websocket';
 
 const useChat = (channelId, onNotification) => {
@@ -32,7 +32,9 @@ const useChat = (channelId, onNotification) => {
 
     const fetchHistory = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/messages`);
+        const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/messages`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
         if (response.ok) {
           const history = await response.json();
           const validHistory = Array.isArray(history) ? history : [];
