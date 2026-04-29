@@ -667,6 +667,12 @@ button:active {
   top: -40px;
 }
 
+/* For messages on the left (other user), open tray to the right */
+.reaction-tray.other {
+  right: auto;
+  left: 0;
+}
+
 .reaction-tray button {
   background: transparent;
   border: none;

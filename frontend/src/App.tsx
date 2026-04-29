@@ -1085,31 +1085,21 @@ function ChatView({
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
                     <span style={{ color: '#8899af', fontSize: '1.1rem', flexShrink: 0 }}>{isVoice ? '🔊' : '#'}</span>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{channel.name}</span>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{channel.name}</span>
+                    {isOwner && (
+                      <button 
+                        className="btn-delete-channel" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteChannel(cid);
+                        }}
+                        style={{ background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.8rem', padding: '0 0 0 4px', flexShrink: 0, marginLeft: 'auto' }}
+                        title="Delete Channel"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
-                  {isVoice && isActive && participants.length > 0 && (
-                    <div className="voice-participants">
-                      {participants.map((p: string) => (
-                        <div key={p} className="voice-participant">
-                          <div className="voice-avatar" />
-                          <span>{p}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {isOwner && (
-                    <button 
-                      className="btn-delete-channel" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteChannel(cid);
-                      }}
-                      style={{ background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.8rem', padding: '0 5px', flexShrink: 0 }}
-                      title="Delete Channel"
-                    >
-                      ✕
-                    </button>
-                  )}
                 </div>
               );
             })
@@ -1779,7 +1769,7 @@ const MessageItem = memo(({ m, isOwn, isOwner, currentUsername, toggleReaction, 
           )}
         </div>
         <div className={`message-bubble ${isMentioned ? 'mentioned' : ''}`}>
-          <div className="reaction-tray">
+          <div className={`reaction-tray${isOwn ? '' : ' other'}`}>
             {['👍', '😂', '👎', '😢', '❤️'].map(emoji => (
               <button key={emoji} onClick={() => toggleReaction(m.id, emoji)}>{emoji}</button>
             ))}
