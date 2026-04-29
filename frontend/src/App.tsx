@@ -11,6 +11,16 @@ import useVoiceChat from './hooks/useVoiceChat'
 import GifPicker from './components/GifPicker'
 import { API_BASE_URL } from './config'
 
+const isImageUrl = (url: string) => {
+  if (!url || typeof url !== 'string') return false;
+  return url.match(/\.(jpeg|jpg|gif|png|webp)$/i) != null || url.includes('giphy.com/media');
+}
+
+const isAudioUrl = (url: string) => {
+  if (!url || typeof url !== 'string') return false;
+  return url.match(/\.(webm|mp3|ogg|wav|mp4)$/i) != null;
+}
+
 interface LogEntry {
   type: 'info' | 'success' | 'error'
   message: string
@@ -805,15 +815,7 @@ function ChatView({
     }
   }
 
-  const isImageUrl = (url: string) => {
-    if (!url || typeof url !== 'string') return false;
-    return url.match(/\.(jpeg|jpg|gif|png|webp)$/i) != null || url.includes('giphy.com/media');
-  }
 
-  const isAudioUrl = (url: string) => {
-    if (!url || typeof url !== 'string') return false;
-    return url.match(/\.(webm|mp3|ogg|wav|mp4)$/i) != null;
-  }
 
   const currentChannelName = channels.find(c => safeId(c.id) === currentChannelId)?.name || 'General'
 
@@ -1086,26 +1088,26 @@ function ChatView({
               {Array.isArray(messages) ? 'No messages yet in this channel.' : 'Loading messages...'}
             </div>
           )}
-          {Array.isArray(messages) && messages.map((m: any, i: number) => {
-            const sender = m.senderId || 'Unknown';
+          {Array.isArray(messages) && (function() {
             const currentUsername = getUsername();
-            const isOwn = sender.toLowerCase() === (currentUsername || '').toLowerCase();
-            
-            return (
-              <MessageItem 
-                key={m.id || i}
-                m={m}
-                isOwn={isOwn}
-                isOwner={isOwner}
-                currentUsername={currentUsername}
-                toggleReaction={toggleReaction}
-                deleteMessage={deleteMessage}
-                isImageUrl={isImageUrl}
-                isAudioUrl={isAudioUrl}
-                API_BASE_URL={API_BASE_URL}
-              />
-            );
-          })}
+            return messages.map((m: any, i: number) => {
+              const sender = m.senderId || 'Unknown';
+              const isOwn = sender.toLowerCase() === (currentUsername || '').toLowerCase();
+              
+              return (
+                <MessageItem 
+                  key={m.id || `temp-${i}`}
+                  m={m}
+                  isOwn={isOwn}
+                  isOwner={isOwner}
+                  currentUsername={currentUsername}
+                  toggleReaction={toggleReaction}
+                  deleteMessage={deleteMessage}
+                  API_BASE_URL={API_BASE_URL}
+                />
+              );
+            });
+          })()}
           <div ref={messagesEndRef} />
         </div>
 
@@ -1416,7 +1418,7 @@ function ChatView({
   )
 }
 
-const MessageItem = memo(({ m, isOwn, isOwner, currentUsername, toggleReaction, deleteMessage, isImageUrl, isAudioUrl, API_BASE_URL }: any) => {
+const MessageItem = memo(({ m, isOwn, isOwner, currentUsername, toggleReaction, deleteMessage, API_BASE_URL }: any) => {
   const sender = m.senderId || 'Unknown';
   const isSystem = m.content?.startsWith('➔');
   const isMentioned = m.content?.includes(`@${currentUsername}`);
