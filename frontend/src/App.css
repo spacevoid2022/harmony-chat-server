@@ -1603,6 +1603,7 @@ button:active {
   text-align: left;
   background: none;
   -webkit-text-fill-color: initial;
+}
 .add-friend-container {
   max-width: 600px;
 }
