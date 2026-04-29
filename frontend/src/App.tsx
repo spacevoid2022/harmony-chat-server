@@ -1252,18 +1252,18 @@ function ChatView({
             </div>
             <div className="friends-content">
               {homeTab === 'add' ? (
-                <div className="add-friend-container" style={{ maxWidth: '600px' }}>
+                <div className="add-friend-container">
                   <h2>Add Friend</h2>
-                  <p style={{ color: '#8899af', marginBottom: '15px' }}>You can add friends with their Harmony username. It's case sensitive!</p>
-                  <form onSubmit={handleSendFriendRequest} className="add-friend-form" style={{ padding: '4px 12px' }}>
+                  <p className="add-friend-subtitle">You can add friends with their Harmony username. It's case sensitive!</p>
+                  <form onSubmit={handleSendFriendRequest} className="add-friend-form">
                     <input 
                       type="text" 
                       placeholder="Enter a username" 
                       value={friendSearch}
                       onChange={(e) => setFriendSearch(e.target.value)}
-                      style={{ fontSize: '1rem', padding: '12px 0' }}
+                      autoComplete="off"
                     />
-                    <button type="submit" style={{ padding: '0 20px', height: '40px', borderRadius: '4px', whiteSpace: 'nowrap' }}>Send Friend Request</button>
+                    <button type="submit">Send Friend Request</button>
                   </form>
                 </div>
               ) : (

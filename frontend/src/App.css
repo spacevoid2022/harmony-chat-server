@@ -1599,16 +1599,33 @@ button:active {
 .add-friend-container h2 {
   font-size: 1rem;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin: 0 0 10px 0;
+  text-align: left;
+  background: none;
+  -webkit-text-fill-color: initial;
+.add-friend-container {
+  max-width: 600px;
+}
+
+.add-friend-subtitle {
+  color: #8899af;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
 }
 
 .add-friend-form {
   display: flex;
   background: #1e1f22;
   border-radius: 8px;
-  padding: 10px;
+  padding: 4px 4px 4px 16px;
   border: 1px solid rgba(0, 0, 0, 0.3);
   width: 100%;
+  transition: border-color 0.2s;
+  align-items: center;
+}
+
+.add-friend-form:focus-within {
+  border-color: #00a8fc;
 }
 
 .add-friend-form input {
@@ -1618,17 +1635,28 @@ button:active {
   color: #fff;
   outline: none;
   font-size: 1rem;
-  min-width: 0;
+  min-width: 100px; /* Ensure it never vanishes */
+  height: 40px;
 }
 
 .add-friend-form button {
   background: #5865f2;
   color: #fff;
   border: none;
-  padding: 8px 16px;
+  padding: 0 20px;
+  height: 40px;
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.2s;
+  margin-top: 0; /* Reset global button margin */
+  width: auto;   /* Reset global button width */
+}
+
+.add-friend-form button:hover {
+  background: #4752c4;
+  transform: none; /* Reset global button hover */
 }
 
 .friends-list {
