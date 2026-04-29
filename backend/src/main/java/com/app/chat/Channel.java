@@ -23,7 +23,6 @@ public class Channel {
     @JoinColumn(name = "server_id")
     private Server server;
 
-    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToMany
     @JoinTable(
       name = "channel_participants",

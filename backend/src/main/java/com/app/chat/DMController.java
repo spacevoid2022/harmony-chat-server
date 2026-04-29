@@ -25,7 +25,7 @@ public class DMController {
     @GetMapping
     public List<Channel> getMyDMs(Principal principal) {
         User me = userRepository.findByUsername(principal.getName()).orElseThrow();
-        return channelRepository.findByType("DM").stream()
+        return channelRepository.findByTypeWithParticipants("DM").stream()
                 .filter(c -> c.getParticipants().stream().anyMatch(p -> p.getId().equals(me.getId())))
                 .collect(Collectors.toList());
     }
@@ -36,7 +36,7 @@ public class DMController {
         User target = userRepository.findByUsername(username).orElseThrow();
 
         // Check if DM already exists
-        Optional<Channel> existing = channelRepository.findByType("DM").stream()
+        Optional<Channel> existing = channelRepository.findByTypeWithParticipants("DM").stream()
                 .filter(c -> c.getParticipants().size() == 2)
                 .filter(c -> c.getParticipants().stream().anyMatch(p -> p.getId().equals(me.getId())))
                 .filter(c -> c.getParticipants().stream().anyMatch(p -> p.getId().equals(target.getId())))
