@@ -390,6 +390,9 @@ button:active {
 .btn-delete-channel {
   opacity: 0;
   transition: all 0.2s;
+  width: auto;
+  margin-top: 0;
+  padding: 0 4px;
 }
 
 .channel-item:hover .btn-delete-channel {
