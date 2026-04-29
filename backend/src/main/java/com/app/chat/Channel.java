@@ -1,5 +1,6 @@
 package com.app.chat;
 
+import com.app.auth.User;
 import jakarta.persistence.*;
 import java.util.List;
 
