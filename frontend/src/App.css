@@ -1298,3 +1298,78 @@ button:active {
   color: #f87171 !important;
   border-color: #f87171 !important;
 }
+
+.user-status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #2b2d31;
+  background: #747f8d;
+  z-index: 2;
+}
+
+.user-status-dot.online { background: #43b581; }
+.user-status-dot.idle { background: #faa61a; }
+.user-status-dot.dnd { background: #f04747; }
+.user-status-dot.offline { background: #747f8d; }
+
+.message-avatar {
+  position: relative;
+}
+
+.message-custom-status {
+  font-size: 0.7rem;
+  color: #8899af;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.status-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
+}
+
+.status-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.status-option.active {
+  background: rgba(100, 108, 255, 0.1);
+  border-color: rgba(100, 108, 255, 0.3);
+}
+
+.status-dot-large {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.status-option span {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.check-mark {
+  color: #646cff;
+  font-weight: 700;
+}
+

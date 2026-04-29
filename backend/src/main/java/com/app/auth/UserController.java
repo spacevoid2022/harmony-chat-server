@@ -21,4 +21,20 @@ public class UserController {
         user.setAvatarUrl(avatarUrl);
         return ResponseEntity.ok(userRepository.save(user));
     }
+
+    @PutMapping("/status")
+    public ResponseEntity<User> updateStatus(@RequestBody String status, @AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setStatus(status);
+        return ResponseEntity.ok(userRepository.save(user));
+    }
+
+    @PutMapping("/custom-status")
+    public ResponseEntity<User> updateCustomStatus(@RequestBody String customStatus, @AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setCustomStatus(customStatus);
+        return ResponseEntity.ok(userRepository.save(user));
+    }
 }

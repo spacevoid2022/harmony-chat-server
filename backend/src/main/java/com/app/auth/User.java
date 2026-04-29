@@ -23,6 +23,9 @@ public class User {
 
     private String avatarUrl;
 
+    private String status = "ONLINE"; // ONLINE, IDLE, DND, OFFLINE
+    private String customStatus;
+
     public User() {}
 
     public User(String username, String email, String password) {
@@ -46,4 +49,10 @@ public class User {
 
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public String getCustomStatus() { return customStatus; }
+    public void setCustomStatus(String customStatus) { this.customStatus = customStatus; }
 }

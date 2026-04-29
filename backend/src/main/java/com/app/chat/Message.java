@@ -37,6 +37,16 @@ public class Message {
         return sender != null ? sender.getAvatarUrl() : null;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("senderStatus")
+    public String getSenderStatus() {
+        return sender != null ? sender.getStatus() : "OFFLINE";
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("senderCustomStatus")
+    public String getSenderCustomStatus() {
+        return sender != null ? sender.getCustomStatus() : null;
+    }
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 

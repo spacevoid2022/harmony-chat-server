@@ -109,6 +109,6 @@ public class AuthService {
         User user = userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return new AuthResponse(jwt, user.getId(), user.getAvatarUrl());
+        return new AuthResponse(jwt, user.getId(), user.getAvatarUrl(), user.getStatus(), user.getCustomStatus());
     }
 }

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import './App.css'
 // @ts-ignore
-import { login, logout, getToken, getUsername, getUserId, getAvatarUrl } from './services/auth'
+import { login, logout, getToken, getUsername, getUserId, getAvatarUrl, getStatus, getCustomStatus } from './services/auth'
 // @ts-ignore
 import useChat from './hooks/useChat'
 // @ts-ignore
@@ -24,9 +24,49 @@ function App() {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [serverStatus, setServerStatus] = useState<'connecting' | 'online' | 'offline'>('connecting')
   const [userAvatar, setUserAvatar] = useState<string | null>(getAvatarUrl())
+  const [userStatus, setUserStatus] = useState<string>(getStatus() || 'ONLINE')
+  const [userCustomStatus, setUserCustomStatus] = useState<string | null>(getCustomStatus())
   
   const logEndRef = useRef<HTMLDivElement>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  const handleStatusUpdate = async (status: string) => {
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/users/status`, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: status
+      })
+      if (resp.ok) {
+        setUserStatus(status)
+        localStorage.setItem('status', status)
+      }
+    } catch (err) {
+      console.error('Status update failed', err)
+    }
+  }
+
+  const handleCustomStatusUpdate = async (customStatus: string) => {
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/users/custom-status`, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: customStatus
+      })
+      if (resp.ok) {
+        setUserCustomStatus(customStatus)
+        localStorage.setItem('customStatus', customStatus)
+      }
+    } catch (err) {
+      console.error('Custom status update failed', err)
+    }
+  }
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -103,6 +143,8 @@ function App() {
         const data = await login(username, password)
         setToken(data.token)
         setUserAvatar(data.avatarUrl)
+        setUserStatus(data.status || 'ONLINE')
+        setUserCustomStatus(data.customStatus)
         addLog('success', 'Login successful!')
       } else {
         const resp = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -127,6 +169,8 @@ function App() {
     logout()
     setToken(null)
     setUserAvatar(null)
+    setUserStatus('ONLINE')
+    setUserCustomStatus(null)
     addLog('info', 'Logged out successfully.')
   }
 
@@ -144,7 +188,11 @@ function App() {
           onLogout={handleLogout} 
           addLog={addLog} 
           userAvatar={userAvatar}
+          userStatus={userStatus}
+          userCustomStatus={userCustomStatus}
           handleAvatarUpload={handleAvatarUpload}
+          handleStatusUpdate={handleStatusUpdate}
+          handleCustomStatusUpdate={handleCustomStatusUpdate}
           avatarInputRef={avatarInputRef}
         />
         <LogWindow logs={logs} logEndRef={logEndRef} />
@@ -229,13 +277,21 @@ function ChatView({
   onLogout, 
   addLog, 
   userAvatar, 
+  userStatus,
+  userCustomStatus,
   handleAvatarUpload, 
+  handleStatusUpdate,
+  handleCustomStatusUpdate,
   avatarInputRef 
 }: { 
   onLogout: () => void, 
   addLog: (type: 'info' | 'success' | 'error', message: string) => void,
   userAvatar: string | null,
+  userStatus: string,
+  userCustomStatus: string | null,
   handleAvatarUpload: (e: React.ChangeEvent<HTMLInputElement>) => void,
+  handleStatusUpdate: (status: string) => void,
+  handleCustomStatusUpdate: (customStatus: string) => void,
   avatarInputRef: React.RefObject<HTMLInputElement | null>
 }) {
   const [servers, setServers] = useState<any[]>([])
@@ -271,6 +327,8 @@ function ChatView({
   
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isServerModalOpen, setIsServerModalOpen] = useState(false)
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false)
+  const [newCustomStatus, setNewCustomStatus] = useState(userCustomStatus || '')
   
   // Settings & Invites State
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
@@ -938,6 +996,7 @@ function ChatView({
             ) : (
               <div className="user-avatar-placeholder">{getUsername()?.substring(0, 1).toUpperCase()}</div>
             )}
+            <div className={`user-status-dot ${userStatus.toLowerCase()}`} />
             <div className="avatar-edit-overlay">Edit</div>
             <input 
               type="file" 
@@ -947,9 +1006,11 @@ function ChatView({
               onChange={handleAvatarUpload} 
             />
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => setIsStatusModalOpen(true)} title="Set Status">
             <div style={{ fontWeight: 600, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getUsername()}</div>
-            <div style={{ fontSize: '0.75rem', color: '#8899af' }}>#{getUserId()}</div>
+            <div style={{ fontSize: '0.75rem', color: '#8899af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {userCustomStatus || 'Set Status...'}
+            </div>
           </div>
           <button className="btn-logout-small" onClick={onLogout} title="Logout">
             ↪
@@ -1037,10 +1098,16 @@ function ChatView({
                     ) : (
                       <div className="avatar-placeholder">{sender.substring(0, 1).toUpperCase()}</div>
                     )}
+                    <div className={`user-status-dot ${m.senderStatus?.toLowerCase() || 'offline'}`} />
                   </div>
                 )}
                 <div className="message-content-wrapper">
-                  <span className="message-sender">{sender}</span>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                    <span className="message-sender">{sender}</span>
+                    {m.senderCustomStatus && (
+                      <span className="message-custom-status">— {m.senderCustomStatus}</span>
+                    )}
+                  </div>
                   <div className={`message-bubble ${isMentioned ? 'mentioned' : ''}`}>
                   <div className="reaction-tray">
                     {['👍', '😂', '👎', '😢', '❤️'].map(emoji => (
@@ -1100,6 +1167,7 @@ function ChatView({
                   ) : (
                     <div className="avatar-placeholder">{sender.substring(0, 1).toUpperCase()}</div>
                   )}
+                  <div className={`user-status-dot ${userStatus.toLowerCase()}`} />
                 </div>
               )}
             </div>
@@ -1361,6 +1429,53 @@ function ChatView({
                 <button type="submit">Create</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {isStatusModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsStatusModalOpen(false)}>
+          <div className="modal-card status-modal" onClick={e => e.stopPropagation()}>
+            <h3>Set Status</h3>
+            
+            <div className="status-options">
+              {[
+                { id: 'ONLINE', label: 'Online', color: '#43b581' },
+                { id: 'IDLE', label: 'Idle', color: '#faa61a' },
+                { id: 'DND', label: 'Do Not Disturb', color: '#f04747' },
+                { id: 'OFFLINE', label: 'Invisible', color: '#747f8d' }
+              ].map(opt => (
+                <div 
+                  key={opt.id} 
+                  className={`status-option ${userStatus === opt.id ? 'active' : ''}`}
+                  onClick={() => handleStatusUpdate(opt.id)}
+                >
+                  <div className="status-dot-large" style={{ backgroundColor: opt.color }} />
+                  <span>{opt.label}</span>
+                  {userStatus === opt.id && <span className="check-mark">✓</span>}
+                </div>
+              ))}
+            </div>
+
+            <div className="form-group" style={{ marginTop: '20px' }}>
+              <label>Custom Status</label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input 
+                  type="text" 
+                  value={newCustomStatus} 
+                  onChange={(e) => setNewCustomStatus(e.target.value)} 
+                  placeholder="What's on your mind?"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCustomStatusUpdate(newCustomStatus)
+                  }}
+                />
+                <button onClick={() => handleCustomStatusUpdate(newCustomStatus)}>Save</button>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={() => setIsStatusModalOpen(false)}>Close</button>
+            </div>
           </div>
         </div>
       )}
