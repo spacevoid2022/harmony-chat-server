@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import './App.css'
 // @ts-ignore
-import { login, logout, getToken, getUsername, getUserId } from './services/auth'
+import { login, logout, getToken, getUsername, getUserId, getAvatarUrl } from './services/auth'
 // @ts-ignore
 import useChat from './hooks/useChat'
 // @ts-ignore
@@ -23,8 +23,46 @@ function App() {
   const [email, setEmail] = useState('')
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [serverStatus, setServerStatus] = useState<'connecting' | 'online' | 'offline'>('connecting')
+  const [userAvatar, setUserAvatar] = useState<string | null>(getAvatarUrl())
   
   const logEndRef = useRef<HTMLDivElement>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const uploadResp = await fetch(`${API_BASE_URL}/api/upload`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${getToken()}` },
+        body: formData
+      })
+
+      if (!uploadResp.ok) throw new Error('Upload failed')
+      const fileUrl = await uploadResp.text()
+
+      // Update user profile
+      const updateResp = await fetch(`${API_BASE_URL}/api/users/avatar`, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: fileUrl
+      })
+
+      if (updateResp.ok) {
+        setUserAvatar(fileUrl)
+        localStorage.setItem('avatarUrl', fileUrl)
+      }
+    } catch (err) {
+      console.error('Avatar upload failed', err)
+    }
+  }
 
   // Periodically check if the backend is alive
   useEffect(() => {
@@ -64,6 +102,7 @@ function App() {
       if (isLogin) {
         const data = await login(username, password)
         setToken(data.token)
+        setUserAvatar(data.avatarUrl)
         addLog('success', 'Login successful!')
       } else {
         const resp = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -87,6 +126,7 @@ function App() {
   const handleLogout = () => {
     logout()
     setToken(null)
+    setUserAvatar(null)
     addLog('info', 'Logged out successfully.')
   }
 
@@ -100,7 +140,13 @@ function App() {
   if (token) {
     return (
       <div className="container">
-        <ChatView onLogout={handleLogout} addLog={addLog} />
+        <ChatView 
+          onLogout={handleLogout} 
+          addLog={addLog} 
+          userAvatar={userAvatar}
+          handleAvatarUpload={handleAvatarUpload}
+          avatarInputRef={avatarInputRef}
+        />
         <LogWindow logs={logs} logEndRef={logEndRef} />
       </div>
     )
@@ -179,7 +225,19 @@ function App() {
   )
 }
 
-function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: 'info' | 'success' | 'error', message: string) => void }) {
+function ChatView({ 
+  onLogout, 
+  addLog, 
+  userAvatar, 
+  handleAvatarUpload, 
+  avatarInputRef 
+}: { 
+  onLogout: () => void, 
+  addLog: (type: 'info' | 'success' | 'error', message: string) => void,
+  userAvatar: string | null,
+  handleAvatarUpload: (e: React.ChangeEvent<HTMLInputElement>) => void,
+  avatarInputRef: React.RefObject<HTMLInputElement | null>
+}) {
   const [servers, setServers] = useState<any[]>([])
   const [currentServerId, setCurrentServerId] = useState<string | null>(() => {
     try {
@@ -865,8 +923,37 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
           )}
         </div>
 
-        <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <button className="btn-logout" onClick={onLogout} style={{ width: '100%' }}>Logout</button>
+        <div style={{ padding: '10px 20px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.1)' }}>
+          <div 
+            className="user-avatar-container" 
+            onClick={() => avatarInputRef.current?.click()}
+            style={{ position: 'relative', cursor: 'pointer' }}
+          >
+            {userAvatar ? (
+              <img 
+                src={userAvatar.startsWith('/') ? `${API_BASE_URL}${userAvatar}` : userAvatar} 
+                alt="Avatar" 
+                className="user-avatar-main" 
+              />
+            ) : (
+              <div className="user-avatar-placeholder">{getUsername()?.substring(0, 1).toUpperCase()}</div>
+            )}
+            <div className="avatar-edit-overlay">Edit</div>
+            <input 
+              type="file" 
+              ref={avatarInputRef} 
+              style={{ display: 'none' }} 
+              accept="image/*" 
+              onChange={handleAvatarUpload} 
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getUsername()}</div>
+            <div style={{ fontSize: '0.75rem', color: '#8899af' }}>#{getUserId()}</div>
+          </div>
+          <button className="btn-logout-small" onClick={onLogout} title="Logout">
+            ↪
+          </button>
         </div>
       </div>
 
@@ -943,8 +1030,18 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
 
             return (
               <div key={i} className={`message-item ${isOwn ? 'own' : ''}`}>
-                <span className="message-sender">{sender}</span>
-                <div className={`message-bubble ${isMentioned ? 'mentioned' : ''}`}>
+                {!isOwn && (
+                  <div className="message-avatar">
+                    {m.senderAvatarUrl ? (
+                      <img src={m.senderAvatarUrl.startsWith('/') ? `${API_BASE_URL}${m.senderAvatarUrl}` : m.senderAvatarUrl} alt="Avatar" />
+                    ) : (
+                      <div className="avatar-placeholder">{sender.substring(0, 1).toUpperCase()}</div>
+                    )}
+                  </div>
+                )}
+                <div className="message-content-wrapper">
+                  <span className="message-sender">{sender}</span>
+                  <div className={`message-bubble ${isMentioned ? 'mentioned' : ''}`}>
                   <div className="reaction-tray">
                     {['👍', '😂', '👎', '😢', '❤️'].map(emoji => (
                       <button key={emoji} onClick={() => toggleReaction(m.id, emoji)}>{emoji}</button>
@@ -996,7 +1093,17 @@ function ChatView({ onLogout, addLog }: { onLogout: () => void, addLog: (type: '
                   )}
                 </div>
               </div>
-            );
+              {isOwn && (
+                <div className="message-avatar">
+                  {userAvatar ? (
+                    <img src={userAvatar.startsWith('/') ? `${API_BASE_URL}${userAvatar}` : userAvatar} alt="Avatar" />
+                  ) : (
+                    <div className="avatar-placeholder">{sender.substring(0, 1).toUpperCase()}</div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
           })}
           <div ref={messagesEndRef} />
         </div>

@@ -28,6 +28,9 @@ export const login = async (username, password) => {
     if (data.userId) {
       localStorage.setItem('userId', data.userId.toString());
     }
+    if (data.avatarUrl) {
+      localStorage.setItem('avatarUrl', data.avatarUrl);
+    }
   }
   return data;
 };
@@ -36,8 +39,10 @@ export const logout = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('username');
   localStorage.removeItem('userId');
+  localStorage.removeItem('avatarUrl');
 };
 
 export const getToken = () => localStorage.getItem('token');
 export const getUsername = () => localStorage.getItem('username');
 export const getUserId = () => localStorage.getItem('userId');
+export const getAvatarUrl = () => localStorage.getItem('avatarUrl');

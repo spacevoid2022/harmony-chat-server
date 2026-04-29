@@ -32,6 +32,11 @@ public class Message {
         return channel != null ? channel.getId().toString() : null;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("senderAvatarUrl")
+    public String getSenderAvatarUrl() {
+        return sender != null ? sender.getAvatarUrl() : null;
+    }
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 

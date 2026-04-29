@@ -20,6 +20,7 @@ com\app\config\UserDetailsServiceImpl.class
 com\app\presence\PresenceService$PresenceMessage.class
 com\app\websocket\VoiceSignalMessage.class
 com\app\websocket\ChatMessage.class
+com\app\auth\UserController.class
 com\app\chat\Channel.class
 com\app\chat\ServerController.class
 com\app\config\JwtAuthenticationFilter.class
