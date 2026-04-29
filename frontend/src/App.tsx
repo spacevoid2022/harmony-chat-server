@@ -374,6 +374,7 @@ function ChatView({
   // Home & DM State
   const [friends, setFriends] = useState<any[]>([])
   const [pendingFriends, setPendingFriends] = useState<any[]>([])
+  const [outgoingRequests, setOutgoingRequests] = useState<any[]>([])
   const [dms, setDms] = useState<any[]>([])
   const [homeTab, setHomeTab] = useState<'online' | 'all' | 'pending' | 'add'>('online')
   const [friendSearch, setFriendSearch] = useState('')
@@ -605,6 +606,11 @@ function ChatView({
         headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       if (resp.ok) setPendingFriends(await resp.json());
+
+      const respOutgoing = await fetch(`${API_BASE_URL}/api/friends/pending/outgoing`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (respOutgoing.ok) setOutgoingRequests(await respOutgoing.json());
     } catch (err) { console.error('Pending fetch failed', err); }
   };
 
@@ -1246,17 +1252,18 @@ function ChatView({
             </div>
             <div className="friends-content">
               {homeTab === 'add' ? (
-                <div className="add-friend-container">
+                <div className="add-friend-container" style={{ maxWidth: '600px' }}>
                   <h2>Add Friend</h2>
                   <p style={{ color: '#8899af', marginBottom: '15px' }}>You can add friends with their Harmony username. It's case sensitive!</p>
-                  <form onSubmit={handleSendFriendRequest} className="add-friend-form">
+                  <form onSubmit={handleSendFriendRequest} className="add-friend-form" style={{ padding: '4px 12px' }}>
                     <input 
                       type="text" 
                       placeholder="Enter a username" 
                       value={friendSearch}
                       onChange={(e) => setFriendSearch(e.target.value)}
+                      style={{ fontSize: '1rem', padding: '12px 0' }}
                     />
-                    <button type="submit">Send Friend Request</button>
+                    <button type="submit" style={{ padding: '0 20px', height: '40px', borderRadius: '4px', whiteSpace: 'nowrap' }}>Send Friend Request</button>
                   </form>
                 </div>
               ) : (
@@ -1267,19 +1274,47 @@ function ChatView({
                      `All Friends — ${friends.length}`}
                   </div>
                   {homeTab === 'pending' ? (
-                    pendingFriends.map(user => (
-                      <div key={user.id} className="friend-item">
-                        <div className="friend-info">
-                          <div className="friend-avatar">
-                            {user.avatarUrl ? <img src={user.avatarUrl} alt="Avatar" /> : user.username[0].toUpperCase()}
+                    <>
+                      {pendingFriends.length === 0 && outgoingRequests.length === 0 && (
+                        <div style={{ textAlign: 'center', color: '#8899af', marginTop: '40px' }}>
+                          There are no pending friend requests.
+                        </div>
+                      )}
+                      
+                      {pendingFriends.length > 0 && (
+                        <div className="friends-count">Incoming — {pendingFriends.length}</div>
+                      )}
+                      {pendingFriends.map(user => (
+                        <div key={user.id} className="friend-item">
+                          <div className="friend-info">
+                            <div className="friend-avatar">
+                              {user.avatarUrl ? <img src={user.avatarUrl} alt="Avatar" /> : user.username[0].toUpperCase()}
+                            </div>
+                            <span>{user.username}</span>
                           </div>
-                          <span>{user.username}</span>
+                          <div className="friend-actions">
+                            <button className="btn-friend-action accept" onClick={() => handleAcceptFriend(user.username)} title="Accept">✓</button>
+                          </div>
                         </div>
-                        <div className="friend-actions">
-                          <button className="btn-friend-action accept" onClick={() => handleAcceptFriend(user.username)} title="Accept">✓</button>
+                      ))}
+
+                      {outgoingRequests.length > 0 && (
+                        <div className="friends-count" style={{ marginTop: '30px' }}>Outgoing — {outgoingRequests.length}</div>
+                      )}
+                      {outgoingRequests.map(user => (
+                        <div key={user.id} className="friend-item" style={{ cursor: 'default', opacity: 0.8 }}>
+                          <div className="friend-info">
+                            <div className="friend-avatar">
+                              {user.avatarUrl ? <img src={user.avatarUrl} alt="Avatar" /> : user.username[0].toUpperCase()}
+                            </div>
+                            <span>{user.username}</span>
+                          </div>
+                          <div className="friend-actions">
+                            <span style={{ color: '#8899af', fontSize: '0.8rem', paddingRight: '10px' }}>Request Sent</span>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                    </>
                   ) : (
                     friends.filter(f => homeTab === 'all' || f.status !== 'OFFLINE').map(user => (
                       <div key={user.id} className="friend-item" onClick={() => handleOpenDM(user.username)}>

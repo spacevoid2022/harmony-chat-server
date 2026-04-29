@@ -1608,6 +1608,7 @@ button:active {
   border-radius: 8px;
   padding: 10px;
   border: 1px solid rgba(0, 0, 0, 0.3);
+  width: 100%;
 }
 
 .add-friend-form input {
@@ -1617,6 +1618,7 @@ button:active {
   color: #fff;
   outline: none;
   font-size: 1rem;
+  min-width: 0;
 }
 
 .add-friend-form button {

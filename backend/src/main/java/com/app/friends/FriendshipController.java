@@ -81,6 +81,15 @@ public class FriendshipController {
                 .collect(Collectors.toList());
     }
 
+    @GetMapping("/pending/outgoing")
+    public List<User> getOutgoingRequests(Principal principal) {
+        User me = userRepository.findByUsername(principal.getName()).orElseThrow();
+        return friendshipRepository.findByUserAndStatus(me, FriendshipStatus.PENDING)
+                .stream()
+                .map(Friendship::getFriend)
+                .collect(Collectors.toList());
+    }
+
     @DeleteMapping("/{username}")
     public ResponseEntity<?> removeFriend(@PathVariable String username, Principal principal) {
         User me = userRepository.findByUsername(principal.getName()).orElseThrow();
