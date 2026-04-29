@@ -364,7 +364,7 @@ button:active {
 }
 
 .channel-item {
-  padding: 10px 16px;
+  padding: 8px 12px;
   border-radius: 8px;
   cursor: pointer;
   color: #8899af;
@@ -372,14 +372,10 @@ button:active {
   font-weight: 500;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
 }
 
-.channel-item:before {
-  content: "#";
-  color: #4a4a4a;
-  font-weight: 700;
-}
 
 .channel-item:hover {
   background: rgba(255, 255, 255, 0.05);
@@ -658,10 +654,10 @@ button:active {
 .reaction-tray::after {
   content: '';
   position: absolute;
-  top: 0;
-  bottom: -20px;
+  top: 100%;
   left: 0;
   right: 0;
+  height: 20px;
   z-index: -1;
 }
 

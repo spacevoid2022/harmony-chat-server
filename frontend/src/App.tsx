@@ -1070,7 +1070,6 @@ function ChatView({
                 <div 
                   key={channel.id} 
                   className={`channel-item ${isActive ? 'active' : ''}`}
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                   onClick={() => {
                     if (isVoice) {
                       if (currentVoiceChannelId !== cid) {
@@ -1084,9 +1083,9 @@ function ChatView({
                     setShowSidebar(false);
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ color: '#8899af', fontSize: '1.1rem' }}>{isVoice ? '🔊' : '#'}</span>
-                    <span>{channel.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                    <span style={{ color: '#8899af', fontSize: '1.1rem', flexShrink: 0 }}>{isVoice ? '🔊' : '#'}</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{channel.name}</span>
                   </div>
                   {isVoice && isActive && participants.length > 0 && (
                     <div className="voice-participants">
@@ -1105,7 +1104,7 @@ function ChatView({
                         e.stopPropagation();
                         handleDeleteChannel(cid);
                       }}
-                      style={{ background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.8rem', padding: '0 5px' }}
+                      style={{ background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.8rem', padding: '0 5px', flexShrink: 0 }}
                       title="Delete Channel"
                     >
                       ✕
