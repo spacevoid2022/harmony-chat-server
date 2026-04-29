@@ -8,6 +8,10 @@ const useVoiceChat = (voiceChannelId) => {
   const [screenStream, setScreenStream] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState({});
   const [participants, setParticipants] = useState([]);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isDeafened, setIsDeafened] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [speakingParticipants, setSpeakingParticipants] = useState({});
   
   const clientRef = useRef(null);
   const subscriptionRef = useRef(null);
@@ -283,7 +287,104 @@ const useVoiceChat = (voiceChannelId) => {
     }
   }, []);
 
-  return { isConnected, localStream, screenStream, remoteStreams, participants, joinChannel, leaveChannel, startScreenShare, stopScreenShare };
+  const toggleMute = useCallback(() => {
+    setIsMuted(prev => {
+      const newState = !prev;
+      if (localStreamRef.current) {
+        localStreamRef.current.getAudioTracks().forEach(track => {
+          track.enabled = !newState;
+        });
+      }
+      return newState;
+    });
+  }, []);
+
+  const toggleDeafen = useCallback(() => {
+    setIsDeafened(prev => {
+      const newState = !prev;
+      // Also mute ourselves if deafened
+      if (newState && !isMuted) toggleMute();
+      else if (!newState && isMuted) toggleMute();
+      
+      return newState;
+    });
+  }, [isMuted, toggleMute]);
+
+  const toggleCamera = useCallback(async () => {
+    try {
+      if (isCameraOn) {
+        const videoTrack = localStreamRef.current?.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.stop();
+          localStreamRef.current.removeTrack(videoTrack);
+        }
+        setIsCameraOn(false);
+      } else {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const videoTrack = stream.getVideoTracks()[0];
+        if (localStreamRef.current) {
+          localStreamRef.current.addTrack(videoTrack);
+          Object.values(peersRef.current).forEach(peer => {
+            peer.addTrack(videoTrack, localStreamRef.current);
+          });
+        }
+        setIsCameraOn(true);
+      }
+    } catch (err) {
+      console.error('Failed to toggle camera', err);
+    }
+  }, [isCameraOn]);
+
+  // Speaking Detection
+  useEffect(() => {
+    if (!localStream) return;
+    
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioContext.createAnalyser();
+    const source = audioContext.createMediaStreamSource(localStream);
+    source.connect(analyser);
+    analyser.fftSize = 512;
+    
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    
+    let interval = setInterval(() => {
+      analyser.getByteFrequencyData(dataArray);
+      let sum = 0;
+      for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
+      const average = sum / bufferLength;
+      const speaking = average > 10; // Threshold
+      
+      setSpeakingParticipants(prev => ({
+        ...prev,
+        [username]: speaking && !isMuted
+      }));
+    }, 100);
+
+    return () => {
+      clearInterval(interval);
+      audioContext.close();
+    };
+  }, [localStream, username, isMuted]);
+
+  return { 
+    isConnected, 
+    localStream, 
+    screenStream, 
+    remoteStreams, 
+    participants, 
+    isMuted, 
+    isDeafened, 
+    isCameraOn, 
+    speakingParticipants,
+    toggleMute, 
+    toggleDeafen, 
+    toggleCamera,
+    joinChannel, 
+    leaveChannel, 
+    startScreenShare, 
+    stopScreenShare 
+  };
 };
 
 export default useVoiceChat;

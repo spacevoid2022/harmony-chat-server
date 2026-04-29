@@ -330,11 +330,19 @@ function ChatView({
     isConnected: isVoiceConnected, 
     remoteStreams, 
     participants, 
+    isMuted,
+    isDeafened,
+    isCameraOn,
+    speakingParticipants,
+    toggleMute,
+    toggleDeafen,
+    toggleCamera,
     joinChannel, 
     leaveChannel,
     startScreenShare,
     stopScreenShare,
-    screenStream
+    screenStream,
+    localStream
   } = useVoiceChat(currentVoiceChannelId);
   
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -968,6 +976,30 @@ function ChatView({
               </div>
               <div className="voice-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button 
+                  className={`btn-voice-action ${isMuted ? 'active' : ''}`}
+                  onClick={toggleMute}
+                  title={isMuted ? 'Unmute' : 'Mute'}
+                  style={{ background: isMuted ? '#f04747' : 'rgba(255,255,255,0.1)' }}
+                >
+                  {isMuted ? '🎙️' : '🎤'}
+                </button>
+                <button 
+                  className={`btn-voice-action ${isDeafened ? 'active' : ''}`}
+                  onClick={toggleDeafen}
+                  title={isDeafened ? 'Undeafen' : 'Deafen'}
+                  style={{ background: isDeafened ? '#f04747' : 'rgba(255,255,255,0.1)' }}
+                >
+                  {isDeafened ? '🎧' : '👂'}
+                </button>
+                <button 
+                  className={`btn-voice-action ${isCameraOn ? 'active' : ''}`}
+                  onClick={toggleCamera}
+                  title={isCameraOn ? 'Turn Off Camera' : 'Turn On Camera'}
+                  style={{ background: isCameraOn ? '#4ade80' : 'rgba(255,255,255,0.1)' }}
+                >
+                  📹
+                </button>
+                <button 
                   className={`btn-screen-share ${screenStream ? 'active' : ''}`}
                   onClick={() => screenStream ? stopScreenShare() : startScreenShare()}
                   title="Share Screen"
@@ -1062,23 +1094,40 @@ function ChatView({
           </div>
         </div>
 
-        {/* Video Stage */}
-        {(screenStream || Object.keys(remoteStreams).some(uid => remoteStreams[uid].getVideoTracks().length > 0)) && (
+        {currentVoiceChannelId && (
           <div className="video-stage">
+            {participants.map((p: string) => {
+              const isLocal = p === getUsername();
+              const stream = isLocal ? localStream : remoteStreams[p];
+              const hasVideo = stream && stream.getVideoTracks().length > 0;
+              const isSpeaking = speakingParticipants[p];
+              
+              return (
+                <div key={p} className={`video-container ${isSpeaking ? 'speaking' : ''}`}>
+                  {hasVideo ? (
+                    <video 
+                      autoPlay 
+                      muted={isLocal} 
+                      ref={el => { if (el && stream && el.srcObject !== stream) el.srcObject = stream; }} 
+                    />
+                  ) : (
+                    <div className="voice-avatar-placeholder">
+                      {p.substring(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="video-label">
+                    {isSpeaking && <span className="speaking-icon">●</span>}
+                    {p} {isLocal && '(You)'}
+                  </div>
+                </div>
+              );
+            })}
             {screenStream && (
-              <div className="video-container local-video">
+              <div className="video-container screen-share">
                 <video autoPlay muted ref={el => { if (el) el.srcObject = screenStream; }} />
-                <div className="video-label">Your Screen</div>
+                <div className="video-label">Screen Share</div>
               </div>
             )}
-            {Object.entries(remoteStreams).map(([uid, stream]: [string, any]) => (
-              stream.getVideoTracks().length > 0 && (
-                <div key={uid} className="video-container remote-video">
-                  <video autoPlay ref={el => { if (el) el.srcObject = stream; }} />
-                  <div className="video-label">{uid}'s Screen</div>
-                </div>
-              )
-            ))}
           </div>
         )}
 
