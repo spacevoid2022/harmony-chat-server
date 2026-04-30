@@ -4,6 +4,7 @@ import { getUsername, getToken } from '../services/auth';
 import { createWebsocketClient } from '../services/websocket';
 
 const useChat = (channelId, onNotification) => {
+  const [messages, setMessages] = useState([]);
   const [typingUsers, setTypingUsers] = useState({}); // { username: timestamp }
 
   // Initial load from cache
