@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, memo } from 'react'
+import { useState, useRef, useEffect, useCallback, memo, Fragment } from 'react'
 import './App.css'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -484,8 +484,17 @@ function ChatView({
     }
   };
 
-  const { messages, sendMessage, deleteMessage, toggleReaction, isConnected } = useChat(currentChannelId, handleNotification)
+  const { messages, sendMessage, sendTyping, deleteMessage, toggleReaction, isConnected, typingUsers } = useChat(currentChannelId, handleNotification)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const lastTypingSentRef = useRef(0);
+  const handleTyping = () => {
+    const now = Date.now();
+    if (now - lastTypingSentRef.current > 2000) {
+      sendTyping();
+      lastTypingSentRef.current = now;
+    }
+  };
 
   const fetchServers = async () => {
     try {
@@ -1400,113 +1409,144 @@ function ChatView({
           )}
           {Array.isArray(messages) && (function() {
             const currentUsername = getUsername();
+            let lastDate = '';
             return messages.map((m: any, i: number) => {
               const sender = m.senderId || 'Unknown';
               const isOwn = sender.toLowerCase() === (currentUsername || '').toLowerCase();
               
+              const messageDate = m.timestamp ? new Date(m.timestamp).toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '';
+              const showDivider = messageDate && messageDate !== lastDate;
+              lastDate = messageDate;
+
               return (
-                <MessageItem 
-                  key={m.id || `temp-${i}`}
-                  m={m}
-                  isOwn={isOwn}
-                  isOwner={isOwner}
-                  currentUsername={currentUsername}
-                  toggleReaction={toggleReaction}
-                  deleteMessage={deleteMessage}
-                  API_BASE_URL={API_BASE_URL}
-                />
+                <Fragment key={m.id || `temp-${i}`}>
+                  {showDivider && (
+                    <div className="date-divider">
+                      <div className="date-divider-line" />
+                      <span>{messageDate}</span>
+                      <div className="date-divider-line" />
+                    </div>
+                  )}
+                  <MessageItem 
+                    m={m}
+                    isOwn={isOwn}
+                    isOwner={isOwner}
+                    currentUsername={currentUsername}
+                    toggleReaction={toggleReaction}
+                    deleteMessage={deleteMessage}
+                    API_BASE_URL={API_BASE_URL}
+                  />
+                </Fragment>
               );
             });
           })()}
           <div ref={messagesEndRef} />
         </div>
 
-        <form className="chat-input-area" onSubmit={handleSend} style={{ position: 'relative' }}>
-          {showMentions && (
-            <div className="mentions-dropdown">
-              {serverMembers
-                .filter(m => m.username.toLowerCase().includes(mentionSearch.toLowerCase()))
-                .slice(0, 8)
-                .map((member, i) => (
-                  <div 
-                    key={member.id} 
-                    className={`mention-item ${i === mentionIndex ? 'active' : ''}`}
-                    onClick={() => {
-                      const words = inputText.split(' ');
-                      words.pop();
-                      words.push(`@${member.username} `);
-                      setInputText(words.join(' '));
-                      setShowMentions(false);
-                    }}
-                  >
-                    @{member.username}
-                  </div>
-                ))}
-            </div>
-          )}
-          <button 
-            type="button" 
-            className="btn-upload" 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-          >
-            {isUploading ? '⌛' : '📎'}
-          </button>
-          <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" style={{ display: 'none' }} />
-          <button type="button" className="btn-gif" onClick={() => setShowGifPicker(true)}>GIF</button>
-          
-          {isRecording ? (
-            <div className="recording-ui">
-              <canvas ref={canvasRef} width="200" height="40" className="waveform-canvas" />
-              <button type="button" className="btn-stop-record" onClick={stopRecording}>⏹️ Stop</button>
-            </div>
-          ) : (
-            <>
-              <button type="button" className="btn-mic" onClick={startRecording} title="Record Voice Message">🎤</button>
-              <input 
-                type="text" 
-                value={inputText} 
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setInputText(val);
-                  const lastWord = val.split(' ').pop();
-                  if (lastWord && lastWord.startsWith('@')) {
-                    setMentionSearch(lastWord.substring(1));
-                    setShowMentions(true);
-                    setMentionIndex(0);
-                  } else {
-                    setShowMentions(false);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (showMentions) {
-                    const filtered = serverMembers.filter(m => m.username.toLowerCase().includes(mentionSearch.toLowerCase())).slice(0, 8);
-                    if (e.key === 'ArrowDown') {
-                      e.preventDefault();
-                      setMentionIndex(prev => (prev + 1) % filtered.length);
-                    } else if (e.key === 'ArrowUp') {
-                      e.preventDefault();
-                      setMentionIndex(prev => (prev - 1 + filtered.length) % filtered.length);
-                    } else if (e.key === 'Enter') {
-                      if (filtered[mentionIndex]) {
-                        e.preventDefault();
+        <div className="chat-input-wrapper">
+          <form className="chat-input-area" onSubmit={handleSend}>
+            {showMentions && (
+              <div className="mentions-dropdown">
+                {serverMembers
+                  .filter(m => m.username.toLowerCase().includes(mentionSearch.toLowerCase()))
+                  .slice(0, 8)
+                  .map((member, i) => (
+                    <div 
+                      key={member.id} 
+                      className={`mention-item ${i === mentionIndex ? 'active' : ''}`}
+                      onClick={() => {
                         const words = inputText.split(' ');
                         words.pop();
-                        words.push(`@${filtered[mentionIndex].username} `);
+                        words.push(`@${member.username} `);
                         setInputText(words.join(' '));
                         setShowMentions(false);
-                      }
-                    } else if (e.key === 'Escape') {
+                      }}
+                    >
+                      @{member.username}
+                    </div>
+                  ))}
+              </div>
+            )}
+            <button 
+              type="button" 
+              className="btn-upload" 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+            >
+              {isUploading ? '⌛' : '📎'}
+            </button>
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" style={{ display: 'none' }} />
+            <button type="button" className="btn-gif" onClick={() => setShowGifPicker(true)}>GIF</button>
+            
+            {isRecording ? (
+              <div className="recording-ui">
+                <canvas ref={canvasRef} width="200" height="40" className="waveform-canvas" />
+                <button type="button" className="btn-stop-record" onClick={stopRecording}>⏹️ Stop</button>
+              </div>
+            ) : (
+              <>
+                <button type="button" className="btn-mic" onClick={startRecording} title="Record Voice Message">🎤</button>
+                <input 
+                  type="text" 
+                  value={inputText} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setInputText(val);
+                    handleTyping();
+                    const lastWord = val.split(' ').pop();
+                    if (lastWord && lastWord.startsWith('@')) {
+                      setMentionSearch(lastWord.substring(1));
+                      setShowMentions(true);
+                      setMentionIndex(0);
+                    } else {
                       setShowMentions(false);
                     }
-                  }
-                }}
-                placeholder={`Message #${currentChannelName}`} 
-              />
-              <button type="submit">Send</button>
-            </>
+                  }}
+                  onKeyDown={(e) => {
+                    if (showMentions) {
+                      const filtered = serverMembers.filter(m => m.username.toLowerCase().includes(mentionSearch.toLowerCase())).slice(0, 8);
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setMentionIndex(prev => (prev + 1) % filtered.length);
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setMentionIndex(prev => (prev - 1 + filtered.length) % filtered.length);
+                      } else if (e.key === 'Enter') {
+                        if (filtered[mentionIndex]) {
+                          e.preventDefault();
+                          const words = inputText.split(' ');
+                          words.pop();
+                          words.push(`@${filtered[mentionIndex].username} `);
+                          setInputText(words.join(' '));
+                          setShowMentions(false);
+                        }
+                      } else if (e.key === 'Escape') {
+                        setShowMentions(false);
+                      }
+                    }
+                  }}
+                  placeholder={`Message #${currentChannelName}`} 
+                />
+                <button type="submit">Send</button>
+              </>
+            )}
+          </form>
+
+          {Object.keys(typingUsers).length > 0 && (
+            <div className="typing-indicator">
+              <div className="typing-dots">
+                <div className="typing-dot" />
+                <div className="typing-dot" />
+                <div className="typing-dot" />
+              </div>
+              <span>
+                {Object.keys(typingUsers).length === 1 
+                  ? `${Object.keys(typingUsers)[0]} is typing...`
+                  : `${Object.keys(typingUsers).length} people are typing...`}
+              </span>
+            </div>
           )}
-        </form>
+        </div>
 
         {showGifPicker && (
           <GifPicker 
@@ -1763,7 +1803,13 @@ const MessageItem = memo(({ m, isOwn, isOwner, currentUsername, toggleReaction, 
       )}
       <div className="message-content-wrapper">
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          {isOwn && m.timestamp && (
+            <span className="message-timestamp">{new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          )}
           <span className="message-sender">{sender}</span>
+          {!isOwn && m.timestamp && (
+            <span className="message-timestamp">{new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          )}
           {m.senderCustomStatus && (
             <span className="message-custom-status">— {m.senderCustomStatus}</span>
           )}

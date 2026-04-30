@@ -1760,17 +1760,79 @@ button:active {
   color: #23a559;
 }
 
-.dm-avatar img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
+.date-divider {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+  color: #8899af;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.server-separator {
-  height: 2px;
-  width: 32px;
-  background: rgba(255, 255, 255, 0.1);
-  margin: 8px auto;
-  border-radius: 1px;
+.date-divider-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.date-divider span {
+  padding: 0 15px;
+}
+
+.message-timestamp {
+  font-size: 0.7rem;
+  color: #4f5660;
+  margin-left: 4px;
+}
+
+.message-item.own .message-timestamp {
+  margin-left: 0;
+  margin-right: 4px;
+}
+
+.typing-indicator {
+  padding: 4px 20px;
+  font-size: 0.75rem;
+  color: #8899af;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn 0.2s ease-out;
+  background: transparent;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 2px;
+}
+
+.typing-dot {
+  width: 4px;
+  height: 4px;
+  background: #8899af;
+  border-radius: 50%;
+  animation: typingDot 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingDot {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
+.chat-input-wrapper {
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chat-input-area {
+  padding: 15px 20px;
+  background: transparent;
+  display: flex;
+  gap: 12px;
 }

@@ -4,8 +4,8 @@ import { getUsername, getToken } from '../services/auth';
 import { createWebsocketClient } from '../services/websocket';
 
 const useChat = (channelId, onNotification) => {
-  const [messages, setMessages] = useState([]);
-  
+  const [typingUsers, setTypingUsers] = useState({}); // { username: timestamp }
+
   // Initial load from cache
   useEffect(() => {
     if (channelId) {
@@ -20,11 +20,31 @@ const useChat = (channelId, onNotification) => {
         setMessages([]);
       }
     }
+    setTypingUsers({});
   }, [channelId]);
 
   const [isConnected, setIsConnected] = useState(false);
   const clientRef = useRef(null);
   const subscriptionRef = useRef(null);
+
+  // Clear typing users after timeout
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setTypingUsers(prev => {
+        const updated = { ...prev };
+        let changed = false;
+        for (const user in updated) {
+          if (now - updated[user] > 4000) {
+            delete updated[user];
+            changed = true;
+          }
+        }
+        return changed ? updated : prev;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch history when channel changes
   useEffect(() => {
@@ -126,6 +146,17 @@ const useChat = (channelId, onNotification) => {
             return;
           }
 
+          if (received.type === 'TYPING') {
+            const username = received.senderId;
+            if (username !== getUsername()) {
+              setTypingUsers(prev => ({
+                ...prev,
+                [username]: Date.now()
+              }));
+            }
+            return;
+          }
+
           setMessages((prev) => {
             // deduplicate by id or content+timestamp
             const exists = prev.some(m => (m.id && received.id && m.id.toString() === received.id.toString()) || 
@@ -136,6 +167,16 @@ const useChat = (channelId, onNotification) => {
             // Cache only the last 100 messages for speed
             localStorage.setItem(`cache_messages_${channelId}`, JSON.stringify(updated.slice(-100)));
             return updated;
+          });
+          
+          // When a message is received, clear the typing indicator for that user
+          setTypingUsers(prev => {
+            const updated = { ...prev };
+            if (updated[received.senderId]) {
+              delete updated[received.senderId];
+              return updated;
+            }
+            return prev;
           });
         } catch (e) {
           console.error('Error parsing websocket message:', e);
@@ -163,6 +204,20 @@ const useChat = (channelId, onNotification) => {
       
       clientRef.current.publish({
         destination: '/app/chat.sendMessage',
+        body: JSON.stringify(payload)
+      });
+    }
+  }, [channelId, isConnected]);
+
+  const sendTyping = useCallback(() => {
+    if (clientRef.current && isConnected && channelId) {
+      const payload = {
+        channelId: channelId,
+        senderId: getUsername(),
+        type: 'TYPING'
+      };
+      clientRef.current.publish({
+        destination: '/app/chat.sendTyping',
         body: JSON.stringify(payload)
       });
     }
@@ -224,7 +279,7 @@ const useChat = (channelId, onNotification) => {
     }
   }, [channelId, isConnected]);
 
-  return { messages, sendMessage, deleteMessage, toggleReaction, isConnected };
+  return { messages, sendMessage, sendTyping, deleteMessage, toggleReaction, isConnected, typingUsers };
 };
 
 export default useChat;

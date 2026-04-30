@@ -98,4 +98,13 @@ public class ChatController {
                 signalMessage
         );
     }
+
+    @MessageMapping("/chat.sendTyping")
+    public void sendTyping(ChatMessage chatMessage) {
+        chatMessage.setType("TYPING");
+        messagingTemplate.convertAndSend(
+                "/topic/channel/" + chatMessage.getChannelId(),
+                chatMessage
+        );
+    }
 }
