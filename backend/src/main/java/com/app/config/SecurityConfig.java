@@ -55,10 +55,13 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        // Explicitly allow both local dev and cloud IP
+        // Explicitly allow both local dev, cloud IP, and Capacitor origins
         config.addAllowedOrigin("http://localhost:5173");
         config.addAllowedOrigin("http://64.181.206.113:5173");
+        config.addAllowedOrigin("http://localhost"); // Android Capacitor
+        config.addAllowedOrigin("capacitor://localhost"); // iOS Capacitor
         config.addAllowedOriginPattern("*");
+
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         // Ensure Pre-flight (OPTIONS) is wide open

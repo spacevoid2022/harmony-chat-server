@@ -1,9 +1,11 @@
 export const isProd = true;
+const isCapacitor = (window as any).Capacitor !== undefined;
 
-export const API_BASE_URL = isProd 
+export const API_BASE_URL = (isProd || isCapacitor)
   ? 'https://harmonychat.duckdns.org' 
   : 'http://localhost:8082';
 
 export const WS_URL = `${API_BASE_URL}/ws`;
 
 export const AUTH_BASE_URL = `${API_BASE_URL}/auth`;
+
