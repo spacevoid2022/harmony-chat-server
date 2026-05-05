@@ -370,6 +370,24 @@ function ChatView({
   // Mentions State
   const [serverMembers, setServerMembers] = useState<any[]>([])
 
+
+
+
+  const [mentionSearch, setMentionSearch] = useState('')
+  const [showMentions, setShowMentions] = useState(false)
+  const [mentionIndex, setMentionIndex] = useState(0)
+
+  // Home & DM State
+  const [friends, setFriends] = useState<any[]>([])
+  const [pendingFriends, setPendingFriends] = useState<any[]>([])
+  const [outgoingRequests, setOutgoingRequests] = useState<any[]>([])
+  const [dms, setDms] = useState<any[]>([])
+  const [homeTab, setHomeTab] = useState<'online' | 'all' | 'pending' | 'add'>('online')
+  const [friendSearch, setFriendSearch] = useState('')
+  
+  // Notification State
+  const [unreadPings, setUnreadPings] = useState<Record<string, number>>({})
+
   // Handle Android Hardware Back Button
   useEffect(() => {
     const backHandler = CapApp.addListener('backButton', () => {
@@ -392,22 +410,6 @@ function ChatView({
       backHandler.then(h => h.remove());
     };
   }, [isModalOpen, isServerModalOpen, isStatusModalOpen, isSettingsModalOpen, showSidebar, homeTab]);
-
-
-  const [mentionSearch, setMentionSearch] = useState('')
-  const [showMentions, setShowMentions] = useState(false)
-  const [mentionIndex, setMentionIndex] = useState(0)
-
-  // Home & DM State
-  const [friends, setFriends] = useState<any[]>([])
-  const [pendingFriends, setPendingFriends] = useState<any[]>([])
-  const [outgoingRequests, setOutgoingRequests] = useState<any[]>([])
-  const [dms, setDms] = useState<any[]>([])
-  const [homeTab, setHomeTab] = useState<'online' | 'all' | 'pending' | 'add'>('online')
-  const [friendSearch, setFriendSearch] = useState('')
-  
-  // Notification State
-  const [unreadPings, setUnreadPings] = useState<Record<string, number>>({})
 
   const handleNotification = useCallback((notif: any) => {
     const currentUsername = getUsername();
