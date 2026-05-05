@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "586980493544",
+    "project_id": "harmony-chat-ac330",
+    "storage_bucket": "harmony-chat-ac330.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:586980493544:android:fb7271cb438bd8f472215d",
+        "android_client_info": {
+          "package_name": "com.getcapacitor.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsx-3RcoMyE4DEnu6--mOHs3uNQMmmsgM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

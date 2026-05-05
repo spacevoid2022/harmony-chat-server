@@ -24,6 +24,9 @@ public class ChatService {
     @Autowired
     private ReactionRepository reactionRepository;
 
+    @Autowired
+    private PushNotificationService pushNotificationService;
+
     @Transactional
     public Message toggleReaction(Long messageId, String username, String emoji) {
         Message message = messageRepository.findById(messageId)
@@ -56,8 +59,48 @@ public class ChatService {
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
         Message message = new Message(channel, sender, content, imageUrl);
-        return messageRepository.saveAndFlush(message);
+        Message saved = messageRepository.saveAndFlush(message);
+
+        // Handle Push Notifications
+        try {
+            if ("DM".equals(channel.getType())) {
+                // Notify other participants in the DM
+                for (User p : channel.getParticipants()) {
+                    if (!p.getUsername().equals(username)) {
+                        pushNotificationService.sendPushNotification(
+                            p.getFcmToken(), 
+                            "New DM from " + username, 
+                            content != null && !content.isEmpty() ? content : "📷 Image"
+                        );
+                    }
+                }
+            } else {
+                // Check for @mentions in regular channels
+                if (content != null && content.contains("@")) {
+                    String[] words = content.split("\\s+");
+                    for (String word : words) {
+                        if (word.startsWith("@") && word.length() > 1) {
+                            String targetUsername = word.substring(1);
+                            userRepository.findByUsername(targetUsername).ifPresent(targetUser -> {
+                                if (!targetUser.getUsername().equals(username)) {
+                                    pushNotificationService.sendPushNotification(
+                                        targetUser.getFcmToken(),
+                                        "Mentioned in #" + channel.getName(),
+                                        username + ": " + content
+                                    );
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to trigger push notifications: " + e.getMessage());
+        }
+
+        return saved;
     }
+
     @Transactional
     public boolean deleteMessage(Long messageId, String username) {
         User user = userRepository.findByUsername(username)

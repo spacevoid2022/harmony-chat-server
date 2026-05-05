@@ -37,4 +37,14 @@ public class UserController {
         user.setCustomStatus(customStatus);
         return ResponseEntity.ok(userRepository.save(user));
     }
+
+    @PutMapping("/fcm-token")
+    public ResponseEntity<Void> updateFcmToken(@RequestBody String fcmToken, @AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setFcmToken(fcmToken);
+        userRepository.save(user);
+        return ResponseEntity.ok().build();
+    }
 }
+

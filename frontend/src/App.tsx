@@ -9,10 +9,12 @@ import useChat from './hooks/useChat'
 // @ts-ignore
 import useVoiceChat from './hooks/useVoiceChat'
 import GifPicker from './components/GifPicker'
-import { API_BASE_URL } from './config'
+import { API_BASE_URL, isCapacitor } from './config'
 import { App as CapApp } from '@capacitor/app'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import { Haptics, ImpactStyle } from '@capacitor/haptics'
+import { PushNotifications } from '@capacitor/push-notifications'
+
 
 
 
@@ -138,6 +140,60 @@ function App() {
     const interval = setInterval(checkServer, 5000)
     return () => clearInterval(interval)
   }, [])
+
+  // Push Notifications Setup
+  useEffect(() => {
+    if (isCapacitor && token) {
+
+      const setupPush = async () => {
+        let permStatus = await PushNotifications.checkPermissions();
+        
+        if (permStatus.receive === 'prompt') {
+          permStatus = await PushNotifications.requestPermissions();
+        }
+
+        if (permStatus.receive !== 'granted') {
+          addLog('error', 'Push notification permission denied');
+          return;
+        }
+
+        await PushNotifications.register();
+
+        PushNotifications.addListener('registration', async (token) => {
+          console.log('Push registration success, token: ' + token.value);
+          // Send token to backend
+          try {
+            await fetch(`${API_BASE_URL}/api/users/fcm-token`, {
+              method: 'PUT',
+              headers: { 
+                'Authorization': `Bearer ${getToken()}`,
+                'Content-Type': 'application/json'
+              },
+              body: token.value
+            });
+            console.log('FCM Token synced with backend');
+          } catch (err) {
+            console.error('Failed to sync FCM token', err);
+          }
+        });
+
+        PushNotifications.addListener('registrationError', (error) => {
+          console.error('Push registration error: ', JSON.stringify(error));
+        });
+
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          console.log('Push notification received: ', JSON.stringify(notification));
+          addLog('info', `Notification: ${notification.title}`);
+        });
+
+        PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+          console.log('Push notification action performed: ', JSON.stringify(notification));
+        });
+      };
+
+      setupPush();
+    }
+  }, [isCapacitor, isLoggedIn]);
 
   const addLog = (type: 'info' | 'success' | 'error', message: string) => {
     const newLog: LogEntry = {

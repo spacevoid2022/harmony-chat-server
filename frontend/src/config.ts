@@ -1,5 +1,6 @@
 export const isProd = true;
-const isCapacitor = (window as any).Capacitor !== undefined;
+export const isCapacitor = (window as any).Capacitor !== undefined;
+
 
 export const API_BASE_URL = (isProd || isCapacitor)
   ? 'https://harmonychat.duckdns.org' 

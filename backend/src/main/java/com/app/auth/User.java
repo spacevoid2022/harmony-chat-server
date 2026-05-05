@@ -25,6 +25,7 @@ public class User {
 
     private String status = "ONLINE"; // ONLINE, IDLE, DND, OFFLINE
     private String customStatus;
+    private String fcmToken;
 
     public User() {}
 
@@ -55,4 +56,8 @@ public class User {
 
     public String getCustomStatus() { return customStatus; }
     public void setCustomStatus(String customStatus) { this.customStatus = customStatus; }
+
+    public String getFcmToken() { return fcmToken; }
+    public void setFcmToken(String fcmToken) { this.fcmToken = fcmToken; }
 }
+
