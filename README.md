@@ -1,44 +1,48 @@
-# Harmony Chat
+# Harmony Chat 🚀
 
-A modern, Discord-inspired real-time chat application built with Spring Boot, PostgreSQL, React, and Electron.
+A professional, Discord-inspired real-time communication platform built for Web, Desktop, and **now Android Mobile**.
 
-## 🚀 Current Features
+## ✨ Recent Major Updates
+- **📱 Native Mobile Support**: Integrated Capacitor for a seamless Android experience.
+- **🛡️ Security Hardening**: Implemented Rate Limiting, CORS Protection, and JWT-secured API endpoints.
+- **🎙️ Voice Chat**: Low-latency voice channels with join/leave sound effects.
+- **💬 Direct Messaging**: One-on-one private conversations with real-time status.
+- **🎨 Premium UX**: Dark-themed UI with Haptic Feedback and custom native branding.
 
-- **JWT Authentication**: Secure login and registration with BCrypt password hashing.
-- **Real-Time Messaging**: WebSocket-based chat using STOMP and SockJS.
-- **Message Persistence**: All chat history is saved in a PostgreSQL database.
-- **Presence Tracking**: Real-time "Online/Offline" status indicators for users.
-- **Global Notifications**: Instant notifications when new messages arrive.
-- **Premium UI**: Dark-themed, glassmorphism design with smooth animations.
+## 🚀 Key Features
+- **JWT Authentication**: Secure login/registration with BCrypt hashing and Rate Limiting.
+- **Real-Time Messaging**: WebSocket-based chat with typing indicators and notifications.
+- **Message Persistence**: Reliable PostgreSQL storage for all history.
+- **Cross-Platform**: Run on Browser, Desktop (Electron), or Mobile (Android).
+- **File Sharing**: Support for image and media uploads.
 
 ## 🛠️ Tech Stack
-
-- **Backend**: Java 17, Spring Boot 3.2.x, Spring Security, Spring Data JPA, WebSockets (STOMP).
-- **Frontend**: React 19, TypeScript, Vite, CSS Modules.
+- **Backend**: Java 17, Spring Boot 3.x, Spring Security, WebSockets (STOMP).
+- **Frontend**: React 19, TypeScript, Vite, **Capacitor**.
 - **Database**: PostgreSQL.
-- **Desktop**: Electron (Integrated via concurrently).
+- **Infrastructure**: Docker Compose, GitHub Actions (CI/CD for Android).
 
-## 📋 Future Roadmap
-
-- [ ] **Separate Channels**: Support for multiple text channels within a server.
-- [ ] **Tenor GIF Support**: Integrated GIF picker and rendering.
-- [ ] **File Sharing**: Upload and share images, videos, and documents.
-- [ ] **Screen Sharing**: Real-time video streaming and screen capture.
-- [ ] **Voice Chat**: Low-latency voice channels using WebRTC.
-- [ ] **Direct Messages**: One-on-one private conversations.
-- [ ] **Server Management**: Create, join, and manage custom chat servers.
+## 📋 Roadmap
+- [ ] **Push Notifications**: Real-time alerts via Firebase (FCM).
+- [ ] **Play Store Release**: Setting up production signing and assets.
+- [ ] **Screen Sharing**: Mobile-compatible screen capture service.
+- [ ] **Tenor GIF Support**: Integrated GIF picker.
 
 ## 🏃 Running Locally
 
-### Backend
+### Backend (Docker)
 1. Ensure Docker is running.
-2. Run `docker compose up --build -d` from the root directory.
-3. Backend will be available at `http://localhost:8088`.
+2. Run `docker compose up --build -d`.
+3. Backend: `http://localhost:8080`.
 
 ### Frontend
-1. Navigate to `frontend/`.
-2. Run `npm install`.
-3. Run `npm start` to launch the Vite dev server and Electron app.
+1. `cd frontend`
+2. `npm install`
+3. `npm run dev` (Web) or `npm run electron` (Desktop).
+
+### Mobile (Android)
+1. `cd frontend`
+2. `npx cap open android` (Requires Android Studio).
 
 ---
 Developed with ❤️ by the Harmony Team.
