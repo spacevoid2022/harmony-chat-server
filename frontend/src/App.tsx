@@ -158,12 +158,14 @@ function App() {
         }
 
         await PushNotifications.register();
+        addLog('info', 'Push registration started...');
 
         PushNotifications.addListener('registration', async (token) => {
+          addLog('success', 'Got Push Token from Google!');
           console.log('Push registration success, token: ' + token.value);
           // Send token to backend
           try {
-            await fetch(`${API_BASE_URL}/api/users/fcm-token`, {
+            const resp = await fetch(`${API_BASE_URL}/api/users/fcm-token`, {
               method: 'PUT',
               headers: { 
                 'Authorization': `Bearer ${getToken()}`,
@@ -171,11 +173,18 @@ function App() {
               },
               body: token.value
             });
-            console.log('FCM Token synced with backend');
+            if (resp.ok) {
+              addLog('success', 'Notifications active!');
+              console.log('FCM Token synced with backend');
+            } else {
+              addLog('error', `Server rejected token: ${resp.status}`);
+            }
           } catch (err) {
+            addLog('error', 'Failed to send token to server');
             console.error('Failed to sync FCM token', err);
           }
         });
+
 
         PushNotifications.addListener('registrationError', (error) => {
           console.error('Push registration error: ', JSON.stringify(error));
