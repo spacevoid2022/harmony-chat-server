@@ -11,6 +11,10 @@ import useVoiceChat from './hooks/useVoiceChat'
 import GifPicker from './components/GifPicker'
 import { API_BASE_URL } from './config'
 import { App as CapApp } from '@capacitor/app'
+import { StatusBar, Style } from '@capacitor/status-bar'
+import { Haptics, ImpactStyle } from '@capacitor/haptics'
+
+
 
 
 const isImageUrl = (url: string) => {
@@ -388,7 +392,21 @@ function ChatView({
   // Notification State
   const [unreadPings, setUnreadPings] = useState<Record<string, number>>({})
 
+  // Handle Android Status Bar styling
+  useEffect(() => {
+    const styleStatusBar = async () => {
+      try {
+        await StatusBar.setStyle({ style: Style.Dark });
+        await StatusBar.setBackgroundColor({ color: '#0d1117' }); // Match index.css background
+      } catch (err) {
+        console.warn('Status bar styling failed', err);
+      }
+    };
+    styleStatusBar();
+  }, []);
+
   // Handle Android Hardware Back Button
+
   useEffect(() => {
     const backHandler = CapApp.addListener('backButton', () => {
       if (isModalOpen) setIsModalOpen(false);
@@ -420,8 +438,10 @@ function ChatView({
           ...prev,
           [notif.serverId]: (prev[notif.serverId] || 0) + 1
         }));
+        Haptics.vibrate().catch(() => {});
       }
     }
+
   }, [currentChannelId]);
   
   // Voice Recording State
@@ -738,8 +758,10 @@ function ChatView({
     if (inputText.trim()) {
       sendMessage(inputText)
       setInputText('')
+      Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
     }
   }
+
 
   const handleGifSelect = (gifUrl: string) => {
     sendMessage(gifUrl)
