@@ -377,20 +377,22 @@ function ChatView({
       else if (isServerModalOpen) setIsServerModalOpen(false);
       else if (isStatusModalOpen) setIsStatusModalOpen(false);
       else if (isSettingsModalOpen) setIsSettingsModalOpen(false);
-      else if (showSidebar) setShowSidebar(false);
-      else if (currentServerId !== null || currentChannelId !== null) {
-        setCurrentServerId(null);
-        setCurrentChannelId(null);
-        localStorage.removeItem('last_server_id');
-        localStorage.removeItem('last_channel_id');
+      else if (homeTab !== 'online') {
+        // If we are in Add Friend/Pending, go back to the Online list
+        setHomeTab('online');
+      } else if (!showSidebar) {
+        // If the sidebar is hidden, open it so the user can see servers/channels
+        setShowSidebar(true);
       } else {
+        // If the sidebar is already open, we've reached the "Main Menu", so exit
         CapApp.exitApp();
       }
     });
     return () => {
       backHandler.then(h => h.remove());
     };
-  }, [isModalOpen, isServerModalOpen, isStatusModalOpen, isSettingsModalOpen, showSidebar, currentServerId, currentChannelId]);
+  }, [isModalOpen, isServerModalOpen, isStatusModalOpen, isSettingsModalOpen, showSidebar, homeTab]);
+
 
   const [mentionSearch, setMentionSearch] = useState('')
   const [showMentions, setShowMentions] = useState(false)
