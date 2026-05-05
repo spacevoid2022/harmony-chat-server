@@ -60,7 +60,8 @@ public class SecurityConfig {
         config.addAllowedOrigin("http://64.181.206.113:5173");
         config.addAllowedOrigin("http://localhost"); // Android Capacitor
         config.addAllowedOrigin("capacitor://localhost"); // iOS Capacitor
-        config.addAllowedOriginPattern("*");
+        config.addAllowedOrigin("https://harmonychat.duckdns.org");
+
 
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
@@ -76,11 +77,12 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Ironclad OPTIONS permission
-                                .requestMatchers("/auth/**", "/api/channels/**", "/ws/**", "/uploads/**", "/api/upload", "/error").permitAll()
+                        auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                .requestMatchers("/auth/**", "/uploads/**", "/error").permitAll()
                                 .requestMatchers("/ws/**").permitAll()
-                                .requestMatchers("/api/**").permitAll()
+                                .requestMatchers("/api/**").authenticated()
                                 .anyRequest().authenticated()
+
                 );
 
         http.authenticationProvider(authenticationProvider());

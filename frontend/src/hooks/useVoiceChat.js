@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createWebsocketClient } from '../services/websocket';
 import { getUsername } from '../services/auth';
 
-const joinSound = new Audio('https://www.soundjay.com/buttons/button-09a.mp3');
-const leaveSound = new Audio('https://www.soundjay.com/buttons/button-10.mp3');
+const joinSound = new Audio('/sounds/join.mp3');
+const leaveSound = new Audio('/sounds/leave.mp3');
+
 
 const useVoiceChat = (voiceChannelId) => {
 

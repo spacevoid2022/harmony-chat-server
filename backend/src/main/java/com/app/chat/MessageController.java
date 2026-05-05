@@ -13,8 +13,9 @@ public class MessageController {
     private ChatService chatService;
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteMessage(@PathVariable Long id, @RequestParam String username) {
-        System.out.println("DEBUG: REST Delete request received for ID: " + id + " from user: " + username);
+    public ResponseEntity<?> deleteMessage(@PathVariable Long id, java.security.Principal principal) {
+        String username = principal.getName();
+        System.out.println("DEBUG: REST Delete request received for ID: " + id + " from authenticated user: " + username);
         boolean success = chatService.deleteMessage(id, username);
         if (success) {
             return ResponseEntity.ok().build();
@@ -22,4 +23,5 @@ public class MessageController {
             return ResponseEntity.status(403).body("Unauthorized or message not found");
         }
     }
+
 }
