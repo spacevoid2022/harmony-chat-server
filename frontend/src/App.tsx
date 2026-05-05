@@ -126,9 +126,10 @@ function App() {
   useEffect(() => {
     const checkServer = async () => {
       try {
-        const resp = await fetch(`${API_BASE_URL}/api/channels`)
+        const resp = await fetch(`${API_BASE_URL}/auth/test`)
         if (resp.ok) setServerStatus('online')
         else setServerStatus('offline')
+
       } catch (err) {
         setServerStatus('offline')
       }
@@ -513,9 +514,11 @@ function ChatView({
     try {
       const resp = await fetch(`${API_BASE_URL}/api/upload`, {
         method: 'POST',
+        headers: { 'Authorization': `Bearer ${getToken()}` },
         body: formData,
         // No Content-Type header needed, browser handles multipart boundaries
       });
+
 
       if (resp.ok) {
         const imageUrl = await resp.text();

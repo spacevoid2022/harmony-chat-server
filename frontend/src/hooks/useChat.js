@@ -247,9 +247,11 @@ const useChat = (channelId, onNotification) => {
       // Fallback: Also try REST if the message is still there after 1s
       setTimeout(async () => {
         try {
-          const resp = await fetch(`${API_BASE_URL}/api/messages/${messageId}?username=${getUsername()}`, {
-            method: 'DELETE'
+          const resp = await fetch(`${API_BASE_URL}/api/messages/${messageId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${getToken()}` }
           });
+
           if (resp.ok) {
             console.log('DEBUG: REST Delete success for ID:', messageId);
             // Manually update state if REST succeeded (WebSocket might have missed it)
