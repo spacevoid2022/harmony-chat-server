@@ -2,7 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createWebsocketClient } from '../services/websocket';
 import { getUsername } from '../services/auth';
 
+const joinSound = new Audio('https://www.soundjay.com/buttons/button-09a.mp3');
+const leaveSound = new Audio('https://www.soundjay.com/buttons/button-10.mp3');
+
 const useVoiceChat = (voiceChannelId) => {
+
   const [isConnected, setIsConnected] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [screenStream, setScreenStream] = useState(null);
@@ -135,6 +139,7 @@ const useVoiceChat = (voiceChannelId) => {
 
   const joinChannel = useCallback(async () => {
     try {
+      joinSound.play().catch(() => {});
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -142,6 +147,7 @@ const useVoiceChat = (voiceChannelId) => {
           autoGainControl: true
         } 
       });
+
       localStreamRef.current = stream;
       setLocalStream(stream);
 
@@ -229,8 +235,10 @@ const useVoiceChat = (voiceChannelId) => {
   }, [voiceChannelId, username, createPeer]);
 
   const leaveChannel = useCallback(() => {
+    leaveSound.play().catch(() => {});
     cleanup();
   }, [cleanup]);
+
 
   useEffect(() => {
     if (isConnected) {

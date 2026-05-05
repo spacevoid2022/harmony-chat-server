@@ -45,8 +45,12 @@ jobs:
           ./gradlew assembleDebug
         working-directory: ./frontend
 
+      - name: Rename APK
+        run: mv frontend/android/app/build/outputs/apk/debug/app-debug.apk frontend/android/app/build/outputs/apk/debug/Harmony-Chat.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: harmony-chat-android-apk
-          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          path: frontend/android/app/build/outputs/apk/debug/Harmony-Chat.apk
+
