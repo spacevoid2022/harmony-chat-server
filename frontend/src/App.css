@@ -1236,7 +1236,12 @@ button:active {
     width: 90%;
     padding: 20px;
   }
+
+  .logs {
+    display: none;
+  }
 }
+
 
 .user-avatar-placeholder {
   width: 36px;
