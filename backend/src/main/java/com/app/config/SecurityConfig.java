@@ -59,7 +59,9 @@ public class SecurityConfig {
         config.addAllowedOrigin("http://localhost:5173");
         config.addAllowedOrigin("http://64.181.206.113:5173");
         config.addAllowedOrigin("http://localhost"); // Android Capacitor
+        config.addAllowedOrigin("https://localhost"); // Android Capacitor (Secure)
         config.addAllowedOrigin("capacitor://localhost"); // iOS Capacitor
+
         config.addAllowedOrigin("https://harmonychat.duckdns.org");
         config.addAllowedOrigin("https://harmonychat.vercel.app");
 
