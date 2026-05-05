@@ -10,6 +10,8 @@ import useChat from './hooks/useChat'
 import useVoiceChat from './hooks/useVoiceChat'
 import GifPicker from './components/GifPicker'
 import { API_BASE_URL } from './config'
+import { App as CapApp } from '@capacitor/app'
+
 
 const isImageUrl = (url: string) => {
   if (!url || typeof url !== 'string') return false;
@@ -367,6 +369,29 @@ function ChatView({
   
   // Mentions State
   const [serverMembers, setServerMembers] = useState<any[]>([])
+
+  // Handle Android Hardware Back Button
+  useEffect(() => {
+    const backHandler = CapApp.addListener('backButton', () => {
+      if (isModalOpen) setIsModalOpen(false);
+      else if (isServerModalOpen) setIsServerModalOpen(false);
+      else if (isStatusModalOpen) setIsStatusModalOpen(false);
+      else if (isSettingsModalOpen) setIsSettingsModalOpen(false);
+      else if (showSidebar) setShowSidebar(false);
+      else if (currentServerId !== null || currentChannelId !== null) {
+        setCurrentServerId(null);
+        setCurrentChannelId(null);
+        localStorage.removeItem('last_server_id');
+        localStorage.removeItem('last_channel_id');
+      } else {
+        CapApp.exitApp();
+      }
+    });
+    return () => {
+      backHandler.then(h => h.remove());
+    };
+  }, [isModalOpen, isServerModalOpen, isStatusModalOpen, isSettingsModalOpen, showSidebar, currentServerId, currentChannelId]);
+
   const [mentionSearch, setMentionSearch] = useState('')
   const [showMentions, setShowMentions] = useState(false)
   const [mentionIndex, setMentionIndex] = useState(0)
@@ -1238,16 +1263,17 @@ function ChatView({
         {currentServerId === null && currentChannelId === null ? (
           <div className="friends-view">
             <div className="friends-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <span style={{ fontSize: '1.2rem', color: '#8899af' }}>👥</span>
-                <span style={{ fontWeight: 600 }}>Friends</span>
-                <div className="header-divider" />
+              <div className="friends-tab-list">
+                <span style={{ fontSize: '1.2rem', color: '#8899af', flexShrink: 0 }}>👥</span>
+                <span style={{ fontWeight: 600, flexShrink: 0 }}>Friends</span>
+                <div className="header-divider" style={{ flexShrink: 0 }} />
                 <button className={`friends-tab ${homeTab === 'online' ? 'active' : ''}`} onClick={() => setHomeTab('online')}>Online</button>
                 <button className={`friends-tab ${homeTab === 'all' ? 'active' : ''}`} onClick={() => setHomeTab('all')}>All</button>
                 <button className={`friends-tab ${homeTab === 'pending' ? 'active' : ''}`} onClick={() => setHomeTab('pending')}>Pending</button>
                 <button className={`friends-tab add-friend ${homeTab === 'add' ? 'active' : ''}`} onClick={() => setHomeTab('add')}>Add Friend</button>
               </div>
             </div>
+
             <div className="friends-content">
               {homeTab === 'add' ? (
                 <div className="add-friend-container">

@@ -1555,12 +1555,23 @@ button:active {
   align-items: center;
   border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+  overflow: hidden;
 }
 
 .friends-tab-list {
   display: flex;
+  align-items: center;
   gap: 10px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none; /* Hide scrollbar for clean look */
+  -ms-overflow-style: none;
 }
+
+.friends-tab-list::-webkit-scrollbar {
+  display: none;
+}
+
 
 .friends-tab {
   background: transparent;
