@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "harmony.chat.app"
+    namespace = "com.getcapacitor.myapp"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "harmony.chat.app"
+        applicationId "com.getcapacitor.myapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
