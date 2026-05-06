@@ -202,7 +202,7 @@ function App() {
 
       setupPush();
     }
-  }, [isCapacitor, isLoggedIn]);
+  }, [isCapacitor, token]);
 
   const addLog = (type: 'info' | 'success' | 'error', message: string) => {
     const newLog: LogEntry = {
