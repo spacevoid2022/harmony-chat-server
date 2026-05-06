@@ -1,4 +1,4 @@
-package harmony.chat.app;
+package com.getcapacitor.myapp;
 
 import com.getcapacitor.BridgeActivity;
 
