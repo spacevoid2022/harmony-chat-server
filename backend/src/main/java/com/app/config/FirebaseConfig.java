@@ -15,12 +15,13 @@ public class FirebaseConfig {
     @PostConstruct
     public void initialize() {
         try {
-            InputStream serviceAccount = getClass().getClassLoader().getResourceAsStream("harmony-chat-ac330-firebase-adminsdk-fbsvc-23287010e8.json");
+            InputStream serviceAccount = getClass().getClassLoader().getResourceAsStream("service-account.json");
             
             if (serviceAccount == null) {
-                System.err.println("WARNING: Firebase service account JSON not found in resources. Push notifications will be disabled.");
+                System.err.println("WARNING: service-account.json not found in resources. Push notifications will be disabled.");
                 return;
             }
+
 
 
             FirebaseOptions options = FirebaseOptions.builder()
