@@ -1,5 +1,7 @@
 # Harmony Chat 🚀
 
+**Live Demo:** [https://harmonychat.vercel.app/](https://harmonychat.vercel.app/)
+
 A professional, Discord-inspired real-time communication platform built for Web, Desktop, and **now Android Mobile**.
 
 ## ✨ Recent Major Updates
@@ -7,7 +9,6 @@ A professional, Discord-inspired real-time communication platform built for Web,
 - **🛡️ Security Hardening**: Implemented Rate Limiting, CORS Protection, and JWT-secured API endpoints.
 - **🎙️ Voice Chat**: Low-latency voice channels with join/leave sound effects.
 - **💬 Direct Messaging**: One-on-one private conversations with real-time status.
-- **🎨 Premium UX**: Dark-themed UI with Haptic Feedback and custom native branding.
 
 ## 🚀 Key Features
 - **JWT Authentication**: Secure login/registration with BCrypt hashing and Rate Limiting.
@@ -26,7 +27,6 @@ A professional, Discord-inspired real-time communication platform built for Web,
 - [ ] **Push Notifications**: Real-time alerts via Firebase (FCM).
 - [ ] **Play Store Release**: Setting up production signing and assets.
 - [ ] **Screen Sharing**: Mobile-compatible screen capture service.
-- [ ] **Tenor GIF Support**: Integrated GIF picker.
 
 ## 🏃 Running Locally
 
@@ -43,6 +43,3 @@ A professional, Discord-inspired real-time communication platform built for Web,
 ### Mobile (Android)
 1. `cd frontend`
 2. `npx cap open android` (Requires Android Studio).
-
----
-Developed with ❤️ by the Harmony Team.
