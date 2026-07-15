@@ -1923,3 +1923,98 @@ button:active {
   display: flex;
   gap: 12px;
 }
+
+/* Ad Layout Styles */
+.app-layout-with-ad {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100vh;
+  gap: 30px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.left-ad-column {
+  width: 160px;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1600px) {
+  .app-layout-with-ad {
+    gap: 15px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .left-ad-column {
+    display: none;
+  }
+}
+
+.vertical-ad-banner {
+  width: 160px;
+  height: 600px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 10px;
+  box-sizing: border-box;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.ad-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.ad-box {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+}
+
+.ad-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.ad-desc {
+  font-size: 0.75rem;
+  color: #8899af;
+  line-height: 1.4;
+}
+
+.ad-btn {
+  background: linear-gradient(45deg, #646cff, #9f75ff);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  box-shadow: 0 4px 15px rgba(100, 108, 255, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.ad-btn:hover {
+  transform: translateY(-2px);
+}
+

@@ -16,6 +16,8 @@ import { Capacitor } from '@capacitor/core'
 import { Haptics, ImpactStyle } from '@capacitor/haptics'
 import { PushNotifications } from '@capacitor/push-notifications'
 import { initializeE2EEKeys, loadKeysFromSessionStorage, clearE2EEKeys } from './services/crypto'
+import { AdMob, BannerAdSize, BannerAdPosition } from '@capacitor-community/admob'
+import type { BannerAdOptions } from '@capacitor-community/admob'
 
 
 
@@ -222,6 +224,33 @@ function App() {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [logs])
 
+  // AdMob Setup for Mobile Banner
+  useEffect(() => {
+    if (isCapacitor) {
+      const initAdMob = async () => {
+        try {
+          await AdMob.initialize();
+          
+          const options: BannerAdOptions = {
+            adId: 'ca-app-pub-9588771232078352/8926073256',
+            adSize: BannerAdSize.BANNER,
+            position: BannerAdPosition.BOTTOM_CENTER,
+            margin: 0,
+            isTesting: false
+          };
+          
+          await AdMob.showBanner(options);
+          addLog('success', 'AdMob Banner loaded successfully');
+        } catch (err: any) {
+          addLog('error', `AdMob Init failed: ${err.message || err}`);
+          console.error('AdMob initialization failed', err);
+        }
+      };
+      
+      initAdMob();
+    }
+  }, [isCapacitor]);
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     addLog('info', `Attempting ${isLogin ? 'Login' : 'Registration'} for user: ${username}...`)
@@ -311,7 +340,20 @@ function App() {
 
   if (token) {
     return (
-      <div className="container">
+      <div className="app-layout-with-ad">
+        {!isCapacitor && (
+          <div className="left-ad-column">
+            <div className="vertical-ad-banner">
+              <div className="ad-label">Advertisement</div>
+              <div className="ad-box">
+                <span className="ad-title">Harmony Pro</span>
+                <span className="ad-desc">Remove advertisements and unlock premium E2EE capabilities!</span>
+                <button className="ad-btn">Upgrade Now</button>
+              </div>
+              <div className="ad-label">160 x 600</div>
+            </div>
+          </div>
+        )}
         <ChatView 
           onLogout={handleLogout} 
           addLog={addLog} 
