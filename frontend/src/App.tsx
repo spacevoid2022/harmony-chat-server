@@ -12,6 +12,7 @@ import GifPicker from './components/GifPicker'
 import { API_BASE_URL, isCapacitor } from './config'
 import { App as CapApp } from '@capacitor/app'
 import { StatusBar, Style } from '@capacitor/status-bar'
+import { Capacitor } from '@capacitor/core'
 import { Haptics, ImpactStyle } from '@capacitor/haptics'
 import { PushNotifications } from '@capacitor/push-notifications'
 import { initializeE2EEKeys, loadKeysFromSessionStorage, clearE2EEKeys } from './services/crypto'
@@ -528,12 +529,13 @@ function ChatView({
   // Notification State
   const [unreadPings, setUnreadPings] = useState<Record<string, number>>({})
 
-  // Handle Android Status Bar styling
+  // Handle Android/iOS Status Bar styling (native only)
   useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
     const styleStatusBar = async () => {
       try {
         await StatusBar.setStyle({ style: Style.Dark });
-        await StatusBar.setBackgroundColor({ color: '#0d1117' }); // Match index.css background
+        await StatusBar.setBackgroundColor({ color: '#0d1117' });
       } catch (err) {
         console.warn('Status bar styling failed', err);
       }

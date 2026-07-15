@@ -2,8 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createWebsocketClient } from '../services/websocket';
 import { getUsername } from '../services/auth';
 
-const joinSound = new Audio('/sounds/join.mp3');
-const leaveSound = new Audio('/sounds/leave.mp3');
+const playSound = (src) => {
+  try {
+    const audio = new Audio(src);
+    audio.volume = 0.4;
+    audio.play().catch(() => {}); // silently ignore missing files or autoplay blocks
+  } catch (_) {}
+};
 
 
 const useVoiceChat = (voiceChannelId) => {

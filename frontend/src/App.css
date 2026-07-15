@@ -852,6 +852,7 @@ button:active {
 }
 
 .chat-input-area {
+  position: relative;
   padding: 20px;
   background: rgba(0, 0, 0, 0.2);
   display: flex;
@@ -1910,11 +1911,13 @@ button:active {
 }
 
 .chat-input-wrapper {
+  position: relative;
   background: rgba(0, 0, 0, 0.2);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .chat-input-area {
+  position: relative;
   padding: 15px 20px;
   background: transparent;
   display: flex;
