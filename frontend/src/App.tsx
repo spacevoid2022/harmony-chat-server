@@ -14,6 +14,7 @@ import { App as CapApp } from '@capacitor/app'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import { Haptics, ImpactStyle } from '@capacitor/haptics'
 import { PushNotifications } from '@capacitor/push-notifications'
+import { initializeE2EEKeys, loadKeysFromSessionStorage, clearE2EEKeys } from './services/crypto'
 
 
 
@@ -46,6 +47,8 @@ function App() {
   const [userAvatar, setUserAvatar] = useState<string | null>(getAvatarUrl())
   const [userStatus, setUserStatus] = useState<string>(getStatus() || 'ONLINE')
   const [userCustomStatus, setUserCustomStatus] = useState<string | null>(getCustomStatus())
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false)
+  const [unlockPassword, setUnlockPassword] = useState('')
   
   const logEndRef = useRef<HTMLDivElement>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
@@ -225,6 +228,16 @@ function App() {
     try {
       if (isLogin) {
         const data = await login(username, password)
+        
+        // Initialize E2EE Keys
+        addLog('info', 'Initializing Secure Chat keys...')
+        const e2eeSuccess = await initializeE2EEKeys(password);
+        if (e2eeSuccess) {
+          addLog('success', 'Secure Chat keys loaded successfully!');
+        } else {
+          addLog('error', 'Secure Chat keys failed to initialize.');
+        }
+
         setToken(data.token)
         setUserAvatar(data.avatarUrl)
         setUserStatus(data.status || 'ONLINE')
@@ -250,12 +263,42 @@ function App() {
   }
 
   const handleLogout = () => {
+    clearE2EEKeys()
     logout()
     setToken(null)
     setUserAvatar(null)
     setUserStatus('ONLINE')
     setUserCustomStatus(null)
     addLog('info', 'Logged out successfully.')
+  }
+
+  // Check E2EE keys on mount if already authenticated
+  useEffect(() => {
+    if (token) {
+      loadKeysFromSessionStorage().then((loaded) => {
+        if (!loaded) {
+          setIsUnlockModalOpen(true);
+        }
+      });
+    }
+  }, [token]);
+
+  const handleUnlockSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!unlockPassword) return;
+    try {
+      addLog('info', 'Decrypting secure chat keys...');
+      const success = await initializeE2EEKeys(unlockPassword);
+      if (success) {
+        addLog('success', 'Secure chat unlocked!');
+        setIsUnlockModalOpen(false);
+        setUnlockPassword('');
+      } else {
+        addLog('error', 'Incorrect password or failed to decrypt keys.');
+      }
+    } catch (err: any) {
+      addLog('error', `Unlock error: ${err.message}`);
+    }
   }
 
   const passwordRequirements = [
@@ -279,6 +322,33 @@ function App() {
           handleCustomStatusUpdate={handleCustomStatusUpdate}
           avatarInputRef={avatarInputRef}
         />
+        {isUnlockModalOpen && (
+          <div className="modal-overlay">
+            <div className="modal-card">
+              <h3 style={{ textAlign: 'center', marginBottom: '10px' }}>🔒 Unlock Secure Chat</h3>
+              <p style={{ color: '#8899af', fontSize: '0.9rem', marginBottom: '20px', textAlign: 'center' }}>
+                Your private cryptographic keys need to be decrypted. Please enter your account password.
+              </p>
+              <form onSubmit={handleUnlockSubmit}>
+                <div className="form-group">
+                  <label>Password</label>
+                  <input 
+                    type="password" 
+                    value={unlockPassword} 
+                    onChange={(e) => setUnlockPassword(e.target.value)} 
+                    placeholder="Enter your account password" 
+                    autoFocus 
+                    required 
+                  />
+                </div>
+                <div className="modal-footer" style={{ marginTop: '20px', flexDirection: 'column', gap: '10px' }}>
+                  <button type="submit" style={{ width: '100%' }}>Unlock Chat</button>
+                  <button type="button" className="btn-cancel" onClick={handleLogout} style={{ width: '100%', borderColor: '#f85149', color: '#f85149' }}>Logout</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
         <LogWindow logs={logs} logEndRef={logEndRef} />
       </div>
     )

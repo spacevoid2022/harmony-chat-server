@@ -2,6 +2,57 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { API_BASE_URL } from '../config';
 import { getUsername, getToken } from '../services/auth';
 import { createWebsocketClient } from '../services/websocket';
+import { getOrFetchChannelKey, encryptMessage, decryptMessage } from '../services/crypto';
+
+async function decryptSingleMessage(received, channelId) {
+  if (received.type !== 'CHAT' && received.type !== undefined) return received;
+  try {
+    const channelKey = await getOrFetchChannelKey(channelId);
+    if (!channelKey) return received;
+    
+    let decryptedContent = received.content;
+    let decryptedImageUrl = received.imageUrl;
+    
+    if (received.content) {
+      decryptedContent = await decryptMessage(received.content, channelKey);
+    }
+    if (received.imageUrl) {
+      decryptedImageUrl = await decryptMessage(received.imageUrl, channelKey);
+    }
+    
+    return { ...received, content: decryptedContent, imageUrl: decryptedImageUrl };
+  } catch (e) {
+    console.error('Decryption failed for message:', e);
+    return received;
+  }
+}
+
+async function decryptMessagesList(msgs, channelId) {
+  try {
+    const channelKey = await getOrFetchChannelKey(channelId);
+    if (!channelKey) return msgs;
+    
+    return await Promise.all(msgs.map(async (m) => {
+      if (m.type !== 'CHAT' && m.type !== undefined) return m;
+      let decryptedContent = m.content;
+      let decryptedImageUrl = m.imageUrl;
+      try {
+        if (m.content) {
+          decryptedContent = await decryptMessage(m.content, channelKey);
+        }
+        if (m.imageUrl) {
+          decryptedImageUrl = await decryptMessage(m.imageUrl, channelKey);
+        }
+      } catch (err) {
+        // Fallback
+      }
+      return { ...m, content: decryptedContent, imageUrl: decryptedImageUrl };
+    }));
+  } catch (e) {
+    console.error('Decryption failed for message history:', e);
+    return msgs;
+  }
+}
 
 const useChat = (channelId, onNotification) => {
   const [messages, setMessages] = useState([]);
@@ -59,8 +110,9 @@ const useChat = (channelId, onNotification) => {
         if (response.ok) {
           const history = await response.json();
           const validHistory = Array.isArray(history) ? history : [];
-          setMessages(validHistory);
-          localStorage.setItem(`cache_messages_${channelId}`, JSON.stringify(validHistory));
+          const decryptedHistory = await decryptMessagesList(validHistory, channelId);
+          setMessages(decryptedHistory);
+          localStorage.setItem(`cache_messages_${channelId}`, JSON.stringify(decryptedHistory));
         }
       } catch (error) {
         console.error('Error fetching chat history:', error);
@@ -123,7 +175,7 @@ const useChat = (channelId, onNotification) => {
       }
 
       console.log('Subscribing to channel:', channelId);
-      subscriptionRef.current = clientRef.current.subscribe(`/topic/channel/${channelId}`, (msg) => {
+      subscriptionRef.current = clientRef.current.subscribe(`/topic/channel/${channelId}`, async (msg) => {
         try {
           const received = JSON.parse(msg.body);
           
@@ -158,13 +210,15 @@ const useChat = (channelId, onNotification) => {
             return;
           }
 
+          const decrypted = await decryptSingleMessage(received, channelId);
+
           setMessages((prev) => {
             // deduplicate by id or content+timestamp
-            const exists = prev.some(m => (m.id && received.id && m.id.toString() === received.id.toString()) || 
-                                         (m.content === received.content && m.timestamp === received.timestamp));
+            const exists = prev.some(m => (m.id && decrypted.id && m.id.toString() === decrypted.id.toString()) || 
+                                         (m.content === decrypted.content && m.timestamp === decrypted.timestamp));
             if (exists) return prev;
             
-            const updated = [...prev, received];
+            const updated = [...prev, decrypted];
             // Cache only the last 100 messages for speed
             localStorage.setItem(`cache_messages_${channelId}`, JSON.stringify(updated.slice(-100)));
             return updated;
@@ -193,13 +247,30 @@ const useChat = (channelId, onNotification) => {
     };
   }, [isConnected, channelId]);
 
-  const sendMessage = useCallback((content, imageUrl = null) => {
+  const sendMessage = useCallback(async (content, imageUrl = null) => {
     if (clientRef.current && isConnected && channelId) {
+      let finalContent = content;
+      let finalImageUrl = imageUrl;
+      
+      try {
+        const channelKey = await getOrFetchChannelKey(channelId);
+        if (channelKey) {
+          if (content) {
+            finalContent = await encryptMessage(content, channelKey);
+          }
+          if (imageUrl) {
+            finalImageUrl = await encryptMessage(imageUrl, channelKey);
+          }
+        }
+      } catch (err) {
+        console.error("Encryption failed, sending as plaintext", err);
+      }
+
       const payload = {
         channelId: channelId,
         senderId: getUsername(),
-        content: content,
-        imageUrl: imageUrl,
+        content: finalContent,
+        imageUrl: finalImageUrl,
         timestamp: new Date().toISOString()
       };
       

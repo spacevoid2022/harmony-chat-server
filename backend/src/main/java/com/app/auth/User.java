@@ -27,6 +27,15 @@ public class User {
     private String customStatus;
     private String fcmToken;
 
+    @Column(columnDefinition = "TEXT")
+    private String publicKey;
+
+    @Column(columnDefinition = "TEXT")
+    private String encryptedPrivateKey;
+
+    private String keySalt;
+    private String keyIv;
+
     public User() {}
 
     public User(String username, String email, String password) {
@@ -59,5 +68,17 @@ public class User {
 
     public String getFcmToken() { return fcmToken; }
     public void setFcmToken(String fcmToken) { this.fcmToken = fcmToken; }
+
+    public String getPublicKey() { return publicKey; }
+    public void setPublicKey(String publicKey) { this.publicKey = publicKey; }
+
+    public String getEncryptedPrivateKey() { return encryptedPrivateKey; }
+    public void setEncryptedPrivateKey(String encryptedPrivateKey) { this.encryptedPrivateKey = encryptedPrivateKey; }
+
+    public String getKeySalt() { return keySalt; }
+    public void setKeySalt(String keySalt) { this.keySalt = keySalt; }
+
+    public String getKeyIv() { return keyIv; }
+    public void setKeyIv(String keyIv) { this.keyIv = keyIv; }
 }
 
