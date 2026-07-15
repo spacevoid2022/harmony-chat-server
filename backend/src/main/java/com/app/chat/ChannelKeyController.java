@@ -38,6 +38,13 @@ public class ChannelKeyController {
         if (channelKey.isPresent()) {
             return ResponseEntity.ok(channelKey.get());
         }
+        
+        // Check if any keys have been generated for this channel by other members
+        List<ChannelKey> allKeys = channelKeyRepository.findByChannelId(channelId);
+        if (!allKeys.isEmpty()) {
+            return ResponseEntity.status(202).body("{\"status\":\"pending_sync\"}");
+        }
+        
         return ResponseEntity.notFound().build();
     }
 

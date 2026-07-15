@@ -86,11 +86,18 @@ export async function generateChannelKey(): Promise<CryptoKey> {
 
 // Decrypt message with AES-GCM channel key
 export async function decryptMessage(encryptedJSON: string, channelKey: CryptoKey): Promise<string> {
+  let payload;
   try {
-    const payload = JSON.parse(encryptedJSON);
-    if (!payload.ciphertext || !payload.iv) {
-      return encryptedJSON; // Not encrypted or fallback to plaintext
-    }
+    payload = JSON.parse(encryptedJSON);
+  } catch (e) {
+    return encryptedJSON; // Plaintext (JSON parse error)
+  }
+  
+  if (!payload || !payload.ciphertext || !payload.iv) {
+    return encryptedJSON; // Plaintext
+  }
+  
+  try {
     const iv = new Uint8Array(base64ToArrayBuffer(payload.iv));
     const ciphertext = base64ToArrayBuffer(payload.ciphertext);
     const decrypted = await window.crypto.subtle.decrypt(
@@ -104,7 +111,7 @@ export async function decryptMessage(encryptedJSON: string, channelKey: CryptoKe
     const decoder = new TextDecoder();
     return decoder.decode(decrypted);
   } catch (e) {
-    // Return original message if decryption fails (e.g. legacy plain message)
+    console.error("E2EE Decryption failed (payload exists but could not be decrypted):", payload, e);
     return encryptedJSON;
   }
 }
@@ -316,6 +323,12 @@ export async function getOrFetchChannelKey(channelId: string | number): Promise<
     
     if (resp.ok) {
       const channelKeyData = await resp.json();
+      
+      if (resp.status === 202 || (channelKeyData && channelKeyData.status === 'pending_sync')) {
+        console.log(`Channel key for ${chIdStr} exists but is pending sync from another member.`);
+        return null;
+      }
+      
       const decryptedKey = await window.crypto.subtle.decrypt(
         { name: "RSA-OAEP" },
         userPrivateKey!,
