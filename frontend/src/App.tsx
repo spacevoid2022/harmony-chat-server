@@ -1635,16 +1635,23 @@ function ChatView({
 
         <div className="chat-input-wrapper">
           <form className="chat-input-area" onSubmit={handleSend}>
-            {showMentions && (
-              <div className="mentions-dropdown">
-                {serverMembers
-                  .filter(m => m.username.toLowerCase().includes(mentionSearch.toLowerCase()))
-                  .slice(0, 8)
-                  .map((member, i) => (
-                    <div 
-                      key={member.id} 
+            {showMentions && (() => {
+              const filtered = serverMembers
+                .filter(m => m.username.toLowerCase().includes(mentionSearch.toLowerCase()))
+                .slice(0, 8);
+              if (filtered.length === 0) return null;
+              return (
+                <div className="mentions-dropdown">
+                  <div className="mentions-header">
+                    Members
+                    <span className="mentions-count">{filtered.length}</span>
+                  </div>
+                  {filtered.map((member, i) => (
+                    <div
+                      key={member.id}
                       className={`mention-item ${i === mentionIndex ? 'active' : ''}`}
-                      onClick={() => {
+                      onMouseDown={(e) => {
+                        e.preventDefault();
                         const words = inputText.split(' ');
                         words.pop();
                         words.push(`@${member.username} `);
@@ -1652,11 +1659,20 @@ function ChatView({
                         setShowMentions(false);
                       }}
                     >
-                      @{member.username}
+                      <div className="mention-avatar">
+                        {member.avatarUrl
+                          ? <img src={member.avatarUrl} alt={member.username} className="mention-avatar-img" />
+                          : <span className="mention-avatar-initial">{member.username.charAt(0).toUpperCase()}</span>
+                        }
+                      </div>
+                      <div className="mention-info">
+                        <span className="mention-username">@{member.username}</span>
+                      </div>
                     </div>
                   ))}
-              </div>
-            )}
+                </div>
+              );
+            })()}
             <button 
               type="button" 
               className="btn-upload" 
