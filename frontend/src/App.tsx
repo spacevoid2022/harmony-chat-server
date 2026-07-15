@@ -317,9 +317,9 @@ function App() {
             <div className="vertical-ad-banner">
               <div className="ad-label">Advertisement</div>
               <div className="ad-box">
-                <span className="ad-title">Harmony Pro</span>
-                <span className="ad-desc">Remove advertisements and unlock premium E2EE capabilities!</span>
-                <button className="ad-btn">Upgrade Now</button>
+                <span className="ad-title">Support Harmony</span>
+                <span className="ad-desc">Ads help keep Harmony free for everyone. Thanks for your support!</span>
+                <button className="ad-btn">Learn More</button>
               </div>
               <div className="ad-label">160 x 600</div>
             </div>
