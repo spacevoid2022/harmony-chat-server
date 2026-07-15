@@ -53,9 +53,9 @@ function AdSenseBanner() {
         className="adsbygoogle"
         style={{ display: 'block', width: '160px', minHeight: '600px' }}
         data-ad-client="ca-pub-9588771232078352"
-        data-ad-slot="YOUR_AD_SLOT_ID"   // ← replace with your AdSense ad unit slot ID
+        data-ad-slot="8315130945"   // ← replace with your AdSense ad unit slot ID
         data-ad-format="auto"
-        data-full-width-responsive="false"
+        data-full-width-responsive="true"
       />
     </div>
   );
