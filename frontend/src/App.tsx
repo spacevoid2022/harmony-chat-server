@@ -37,6 +37,30 @@ interface LogEntry {
   timestamp: string
 }
 
+// ─── Google AdSense Banner ────────────────────────────────────────────────────
+// To show a real ad, go to your AdSense dashboard → Ads → By ad unit → Display ads
+// Create a new unit, copy the "data-ad-slot" number, and paste it below.
+function AdSenseBanner() {
+  useEffect(() => {
+    try {
+      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+    } catch (_) {}
+  }, []);
+
+  return (
+    <div className="vertical-ad-banner">
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block', width: '160px', minHeight: '600px' }}
+        data-ad-client="ca-pub-9588771232078352"
+        data-ad-slot="YOUR_AD_SLOT_ID"   // ← replace with your AdSense ad unit slot ID
+        data-ad-format="auto"
+        data-full-width-responsive="false"
+      />
+    </div>
+  );
+}
+
 function App() {
   const [token, setToken] = useState<string | null>(getToken())
   const [isLogin, setIsLogin] = useState(true)
@@ -314,15 +338,7 @@ function App() {
       <div className="app-layout-with-ad">
         {!isCapacitor && (
           <div className="left-ad-column">
-            <div className="vertical-ad-banner">
-              <div className="ad-label">Advertisement</div>
-              <div className="ad-box">
-                <span className="ad-title">Support Harmony</span>
-                <span className="ad-desc">Ads help keep Harmony free for everyone. Thanks for your support!</span>
-                <button className="ad-btn">Learn More</button>
-              </div>
-              <div className="ad-label">160 x 600</div>
-            </div>
+            <AdSenseBanner />
           </div>
         )}
         <ChatView 
