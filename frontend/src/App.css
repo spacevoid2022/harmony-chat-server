@@ -1951,7 +1951,7 @@ button:active {
   }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 900px) {
   .left-ad-column {
     display: none;
   }
