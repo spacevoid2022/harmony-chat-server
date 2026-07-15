@@ -67,7 +67,7 @@ public class ChannelKeyController {
 
     @GetMapping("/{channelId}/members-missing-keys")
     public ResponseEntity<List<UserKeyInfo>> getMembersMissingKeys(@PathVariable Long channelId) {
-        Channel channel = channelRepository.findById(channelId)
+        Channel channel = channelRepository.findByIdWithParticipants(channelId)
                 .orElseThrow(() -> new RuntimeException("Channel not found"));
 
         List<User> members;
