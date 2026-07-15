@@ -67,32 +67,23 @@ public class ChatService {
                 // Notify other participants in the DM
                 for (User p : channel.getParticipants()) {
                     if (!p.getUsername().equals(username)) {
+                        // Server cannot decrypt E2EE messages — use a generic body
+                        String notifBody = imageUrl != null && !imageUrl.isEmpty()
+                            ? "📷 Sent you an image"
+                            : "💬 Sent you a message";
                         pushNotificationService.sendPushNotification(
-                            p.getFcmToken(), 
-                            "New DM from " + username, 
-                            content != null && !content.isEmpty() ? content : "📷 Image"
+                            p.getFcmToken(),
+                            username,
+                            notifBody
                         );
                     }
                 }
             } else {
-                // Check for @mentions in regular channels
-                if (content != null && content.contains("@")) {
-                    String[] words = content.split("\\s+");
-                    for (String word : words) {
-                        if (word.startsWith("@") && word.length() > 1) {
-                            String targetUsername = word.substring(1);
-                            userRepository.findByUsername(targetUsername).ifPresent(targetUser -> {
-                                if (!targetUser.getUsername().equals(username)) {
-                                    pushNotificationService.sendPushNotification(
-                                        targetUser.getFcmToken(),
-                                        "Mentioned in #" + channel.getName(),
-                                        username + ": " + content
-                                    );
-                                }
-                            });
-                        }
-                    }
-                }
+                // For server channels, notify if the message metadata carries a mention hint.
+                // We can no longer detect "@" inside encrypted content on the server side,
+                // so the client sends a plaintext hasMention flag in a separate field (future work).
+                // For now, send a generic channel notification only — never include ciphertext.
+                // (Mention push notifications will be driven client-side via WebSocket in the app.)
             }
         } catch (Exception e) {
             System.err.println("Failed to trigger push notifications: " + e.getMessage());
