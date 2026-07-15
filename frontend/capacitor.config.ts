@@ -5,11 +5,11 @@ const config: CapacitorConfig = {
   appName: 'Harmony',
   webDir: 'dist',
 
-  // OTA updates: the APK loads the live web app from the server on every launch.
-  // Push a frontend update to the server and all users get it automatically.
+  // OTA updates: APK loads the live web app from the HTTPS server on every launch.
+  // Push a frontend update + redeploy Docker and all users get it automatically.
   server: {
-    url: 'http://64.181.206.113:5173',
-    cleartext: true  // required for plain HTTP (upgrade to HTTPS + set false when you add SSL)
+    url: 'https://harmonychat.duckdns.org',
+    cleartext: false
   }
 };
 
