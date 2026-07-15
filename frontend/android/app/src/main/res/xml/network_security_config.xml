@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow plain HTTP to the Harmony production server only -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">64.181.206.113</domain>
+    </domain-config>
+</network-security-config>
